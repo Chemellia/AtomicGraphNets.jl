@@ -2,15 +2,19 @@ using PyCall
 using GeometricFlux
 using LightGraphs, SimpleWeightedGraphs, MetaGraphs
 # need pymatgen installed in Julia's pythondir, can do with Conda.jl
+include("functions.jl")
 
-# import the code
+# import pymatgen stuff (to read in CIF and find neighbors)
 s = pyimport("pymatgen.core.structure")
 
 # read in a CIF
 c = s.Structure.from_file("cgcnn/cif_files/Ag2Br2-CH-NM.cif")
+num_atoms = size(c)[1]
+# for pulling atom features later...
+atno_list = [site_atno(site) for site in c]
 
 # set some defaults that we can play with later
-# this is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
+# note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
 max_num_nbr = 12
 radius = 8
 
@@ -23,26 +27,26 @@ all_nbrs = c.get_all_neighbors(radius, include_index=true)
 
 # sort by distance
 # returns list of length N of lists of length M
-all_nbrs = [sort(all_nbrs[i,:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:size(all_nbrs)[1]]
-num_atoms = size(all_nbrs)[1]
-
-# build graph with a vertex for each atom
-# should eventually use MetaGraph to do features
-g = SimpleWeightedGraph{UInt16, UInt8}(num_atoms)
+all_nbrs = [sort(all_nbrs[i,:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:num_atoms]
 
 # iterate through each list of neighbors (corresponding to neighbors of a given atom) to add graph edges
 # also store some basic features so we don't have to iterate through all over again when it gets converted to a MetaGraph
 dist_mat = zeros(num_atoms, num_atoms)
-atom_ind = 1
-for atom_nbs in all_nbrs
+weight_mat = zeros(UInt8, num_atoms, num_atoms)
+for atom_ind in 1:num_atoms
     this_atom = get(c, atom_ind-1)
+    atom_nbs = all_nbrs[atom_ind]
     # iterate over each neighbor...
-    global nb_ind = 1
-    for nb in atom_nbs
-        println(atom_ind, nb_ind)
+    for nb_num in 1:size(all_nbrs[atom_ind])[1]
+        print(atom_ind, ' ', nb_ind, ' ')
+        nb = all_nbrs[atom_ind][nb_num]
+        println(nb)
+        global nb_ind = site_index(nb)
         # if we're under the max, add it for sure
-        if nb_ind < max_num_nbr
-            add_bond!(g, atom_ind, site_index(nb))
+        if nb_num < max_num_nbr
+            #add_bond!(g, atom_ind, nb_ind)
+            weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + 1
+            dist_mat[atom_ind, nb_ind] = site_distance(nb)
         # if we're at/above the max, add if distance is the same
         else
             # check we're not on the last one
@@ -50,11 +54,34 @@ for atom_nbs in all_nbrs
                 next_nb = atom_nbs[nb_ind + 1]
                 # add another bond if it's the exact same distance to the next neighbor in the list
                 if are_equidistant(nb, next_nb)
-                    add_bond!(g, atom_ind, site_index(nb))
+                    weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + 1
                 end
             end
         end
-        global nb_ind = nb_ind + 1
     end
-    global atom_ind = atom_ind + 1
 end
+
+# turn into a graph
+g = SimpleGraph(num_atoms)
+for i in 1:num_atoms
+    for j in 1:i
+        if weight_mat[i,j] > 0
+            add_edge!(g, i, j)
+        end
+    end
+end
+
+# make the MetaGraph to store the features
+mg = MetaGraph{UInt16, UInt8}(g, 0)
+
+# set vertex features
+#for v in 1:num_atoms
+#    set_prop!(mg, v, atno_list[v])
+#end
+
+# set edge features
+#for i in 1:num_atoms
+#    for j in 1:i
+#        set_prop!(mg, i, j, dist_mat[i,j])
+#    end
+#end

@@ -21,10 +21,6 @@ radius = 8
 # N=4, M=43 for Ag2Br2-CH-NM with cutoff radius
 all_nbrs = c.get_all_neighbors(radius, include_index=true)
 
-# a few fcns just for readability
-site_index(site) = convert(UInt16, get(site, 2)) + 1
-site_distance(site) = convert(Float64, get(site, 1))
-
 # sort by distance
 # returns list of length N of lists of length M
 all_nbrs = [sort(all_nbrs[i,:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:size(all_nbrs)[1]]
@@ -33,27 +29,6 @@ num_atoms = size(all_nbrs)[1]
 # build graph with a vertex for each atom
 # should eventually use MetaGraph to do features
 g = SimpleWeightedGraph{UInt16, UInt8}(num_atoms)
-
-# function to check if two sites are the same
-function are_same(site1, site2, atol=0.1)
-    #site1.is_periodic_image(site2) might also work
-    site1.distance(site2) < atol # angstroms
-end
-
-# check if two sites are equidistant (for cutting off neighbor lists consistently)
-# tolerance is in angstroms
-# note that this doesn't check that they're from the same central atom...
-function are_equidistant(site1, site2, atol=1e-4)
-    isapprox(site_distance(site1), site_distance(site2), atol=atol)
-end
-
-# function to add a bond in graph
-# either increment weight by 1 or create the weight
-function add_bond!(g, ind1, ind2)
-    curr_wt = g.weights[ind1, ind2]
-    add_edge!(g, ind1, ind2, curr_wt + 1)
-end
-
 
 # iterate through each list of neighbors (corresponding to neighbors of a given atom) to add graph edges
 # also store some basic features so we don't have to iterate through all over again when it gets converted to a MetaGraph
@@ -83,22 +58,3 @@ for atom_nbs in all_nbrs
     end
     global atom_ind = atom_ind + 1
 end
-
-
-
-
-
-
-
-# initialize things, should set types later
-nbr_fea_idx = []
-nbr_fea = []
-
-#=
-for nbr in all_nbrs
-    if size(nbr)[1] < max_num_nbr
-        println("There may not be enough neighbors to build the graph. If this keeps happening, consider increasing the radius.")
-        # pad lengths appropriately
-    else
-        append!(nbr_fea_idx,
-=#

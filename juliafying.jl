@@ -1,6 +1,7 @@
 using PyCall
 using GeometricFlux
 using LightGraphs, SimpleWeightedGraphs, MetaGraphs
+using GraphPlot, Colors
 # need pymatgen installed in Julia's pythondir, can do with Conda.jl
 include("functions.jl")
 
@@ -8,10 +9,16 @@ include("functions.jl")
 s = pyimport("pymatgen.core.structure")
 
 # read in a CIF
-c = s.Structure.from_file("cgcnn/cif_files/Ag2Br2-CH-NM.cif")
+cifdir = "cgcnn/cif_files/"
+cifs = readdir(cifdir)
+# figure out why 3+ doesn't work...neighbor lists are wonky
+cif = string(cifdir, cifs[rand(1:size(cifs)[1])])
+print(cif)
+c = s.Structure.from_file(cif)
 num_atoms = size(c)[1]
 # for pulling atom features later...
 atno_list = [site_atno(site) for site in c]
+element_list = [site_element(site) for site in c]
 
 # set some defaults that we can play with later
 # note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
@@ -20,6 +27,7 @@ radius = 8
 
 # find neighbors, requires a cutoff radius
 # returns a NxM Array of PyObject PeriodicSite
+# ... except when it returns a list of N of lists of length M...
 # each PeriodicSite is (site, distance, index, image)
 # N is num sites in crystal, M is num neighbors
 # N=4, M=43 for Ag2Br2-CH-NM with cutoff radius
@@ -27,7 +35,11 @@ all_nbrs = c.get_all_neighbors(radius, include_index=true)
 
 # sort by distance
 # returns list of length N of lists of length M
-all_nbrs = [sort(all_nbrs[i,:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:num_atoms]
+if length(size(all_nbrs)) == 2
+    all_nbrs = [sort(all_nbrs[i,:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:num_atoms]
+elseif length(size(all_nbrs)) == 1
+    all_nbrs = [sort(all_nbrs[i][:], lt=(x,y)->isless(site_distance(x), site_distance(y))) for i in 1:num_atoms]
+end
 
 # iterate through each list of neighbors (corresponding to neighbors of a given atom) to add graph edges
 # also store some basic features so we don't have to iterate through all over again when it gets converted to a MetaGraph
@@ -38,9 +50,7 @@ for atom_ind in 1:num_atoms
     atom_nbs = all_nbrs[atom_ind]
     # iterate over each neighbor...
     for nb_num in 1:size(all_nbrs[atom_ind])[1]
-        print(atom_ind, ' ', nb_ind, ' ')
         nb = all_nbrs[atom_ind][nb_num]
-        println(nb)
         global nb_ind = site_index(nb)
         # if we're under the max, add it for sure
         if nb_num < max_num_nbr
@@ -71,17 +81,22 @@ for i in 1:num_atoms
     end
 end
 
+# visualize it...
+plt = gplot(g, nodefillc=graph_colors(atno_list), nodelabel=element_list, edgelinewidth=graph_edgewidths(g, weight_mat))
+display(plt)
+
 # make the MetaGraph to store the features
 mg = MetaGraph{UInt16, UInt8}(g, 0)
 
 # set vertex features
-#for v in 1:num_atoms
-#    set_prop!(mg, v, atno_list[v])
-#end
+for v in 1:num_atoms
+    set_prop!(mg, v, :atno, atno_list[v])
+end
 
 # set edge features
-#for i in 1:num_atoms
-#    for j in 1:i
-#        set_prop!(mg, i, j, dist_mat[i,j])
-#    end
-#end
+for i in 1:num_atoms
+    for j in 1:i
+        set_prop!(mg, i, j, :len, dist_mat[i,j]) # bond length
+        set_prop!(mg, i, j, :weight, weight_mat[i,j]) # number of bonds
+    end
+end

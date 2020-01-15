@@ -1,52 +1,39 @@
 using PyCall
+# need pymatgen installed in Julia's pythondir, can do with Conda.jl
 using GeometricFlux
 using LightGraphs, SimpleWeightedGraphs, MetaGraphs
 using GraphPlot, Colors
-# need pymatgen installed in Julia's pythondir, can do with Conda.jl
+
 include("functions.jl")
 
-# read in a CIF
-cifdir = "cgcnn/cif_files/"
-cifs = readdir(cifdir)
+# pick a CIF
+cif_dir = "cgcnn/cif_files/"
+cif_list = readdir(cif_dir)
+# pick a random cif
+cif_path = string(cif_dir, cif_list[rand(1:size(cif_list)[1])])
+# specific ones...
+#cif_path = string(cif_dir, cif_list[1])
+#cif_path = "cgcnn/cif_files/VBrI-MoSSe-FM.cif"
+print(cif_path)
 
-cif = string(cifdir, cifs[rand(1:size(cifs)[1])]) # random one
-#cif = string(cifdir, cifs[1]) # specific one
-print(cif)
+# read in the CIF and get some basic info
+c = s.Structure.from_file(cif_path)
+num_atoms = size(c)[1]
+# for pulling atom features later...
+atno_list = [site_atno(site) for site in c]
+element_list = [site_element(site) for site in c]
 
-weight_mat, dist_mat, atno_list, element_list = build_graph_matrices(cif)
-num_atoms = size(weight_mat)[1]
-
-# turn into a graph...trying a few options here
-g = SimpleGraph(num_atoms)
-wg = SimpleWeightedGraph{UInt16, UInt8}(num_atoms)
-
-for i=1:num_atoms, j=1:i
-    if weight_mat[i,j] > 0
-        add_edge!(g, i, j)
-        add_edge!(wg, i, j, weight_mat[i,j])
-    end
-end
-
-# visualize it...
-plt = gplot(g, nodefillc=graph_colors(atno_list), nodelabel=element_list, edgelinewidth=graph_edgewidths(g, weight_mat))
-display(plt)
+# do some magic
+g = build_graph(cif_path)
+visualize_graph(g, element_list)
 
 # make a simple graph convolution layer
-l = GCNConv(wg, 1=>1)
+l = GCNConv(g, 1=>1)
 
 
-#=
-# make the MetaGraph to store the features
-mg = MetaGraph{UInt16, UInt8}(g, 0)
-
-# set vertex features
-for v in 1:num_atoms
-    set_prop!(mg, v, :atno, atno_list[v])
-end
-
-# set edge features
-for i=1:num_atoms, j=1:i
-    set_prop!(mg, i, j, :len, dist_mat[i,j]) # bond length
-    set_prop!(mg, i, j, :weight, weight_mat[i,j]) # number of bonds
-end
-=#
+# checking if neighbor lists make sense...
+# i.e., if A is B's neighbor, is B always A's?
+#all_nbrs = c.get_all_neighbors(radius, include_index=true)
+#nb_indices = [[site_index(site) for site in nb_list] for nb_list in all_nbrs]
+# this should return a vector of all the same number...but it doesn't always
+#sanity_check = [sum([count(i->(i==k), l) for l in nb_indices]) for k in 1:size(nb_indices,1)]

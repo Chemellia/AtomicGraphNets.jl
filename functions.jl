@@ -3,17 +3,30 @@ using PyCall
 # import pymatgen stuff (to read in CIF and find neighbors)
 s = pyimport("pymatgen.core.structure")
 
+# a few fcns just for readability
+site_index(site) = convert(UInt16, get(site, 2)) + 1
+site_distance(site) = convert(Float64, get(site, 1))
+site_atno(site) = [e.Z for e in site.species.elements][1] # for now just returns first one, can add checks to handle disordered stuff later maybe
+site_element(site) = [e.symbol for e in site.species.elements][1]
+
+#=
+check if two sites are equidistant (for cutting off neighbor lists consistently)
+tolerance is in angstroms
+note that this doesn't check that they're from the same central atom...
+=#
+function are_equidistant(site1, site2, atol=1e-4)
+    isapprox(site_distance(site1), site_distance(site2), atol=atol)
+end
+
+# options for decay of bond weights with distance...
+inverse_square(x, scale) = (x/scale)^(-2.0)
+exp_decay(x, scale) = exp(-x/scale)
+
 #=
 Function to actually build graph from a CIF file of a crystal structure.
 Note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
 =#
-function build_graph_matrices(cifpath, radius=8, max_num_nbr=12)
-    c = s.Structure.from_file(cifpath)
-    num_atoms = size(c)[1]
-    # for pulling atom features later...
-    atno_list = [site_atno(site) for site in c]
-    element_list = [site_element(site) for site in c]
-
+function build_graph(crystal_structure; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square, dist_decay_scale=radius)
     # find neighbors, requires a cutoff radius
     # returns a NxM Array of PyObject PeriodicSite
     # ... except when it returns a list of N of lists of length M...
@@ -31,9 +44,7 @@ function build_graph_matrices(cifpath, radius=8, max_num_nbr=12)
     end
 
     # iterate through each list of neighbors (corresponding to neighbors of a given atom) to find bonds (eventually, graph edges)
-    # also store some basic features so we don't have to iterate through all over again when it gets converted to a MetaGraph
-    dist_mat = zeros(num_atoms, num_atoms)
-    weight_mat = zeros(UInt8, num_atoms, num_atoms)
+    weight_mat = zeros(num_atoms, num_atoms)
     for atom_ind in 1:num_atoms
         this_atom = get(c, atom_ind-1)
         atom_nbs = all_nbrs[atom_ind]
@@ -43,9 +54,7 @@ function build_graph_matrices(cifpath, radius=8, max_num_nbr=12)
             global nb_ind = site_index(nb)
             # if we're under the max, add it for sure
             if nb_num < max_num_nbr
-                #add_bond!(g, atom_ind, nb_ind)
-                weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + 1
-                dist_mat[atom_ind, nb_ind] = site_distance(nb)
+                weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb), dist_decay_scale)
             # if we're at/above the max, add if distance is the same
             else
                 # check we're not on the last one
@@ -53,34 +62,38 @@ function build_graph_matrices(cifpath, radius=8, max_num_nbr=12)
                     next_nb = atom_nbs[nb_ind + 1]
                     # add another bond if it's the exact same distance to the next neighbor in the list
                     if are_equidistant(nb, next_nb)
-                        weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + 1
+                        weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb), dist_decay_scale)
                     end
                 end
             end
         end
     end
 
-    return weight_mat, dist_mat, atno_list, element_list
+    # normalize weights
+    weight_mat = weight_mat ./ maximum(weight_mat)
+
+    # average across diagonal (because neighborness isn't strictly symmetric in the way we're defining it here)
+    weight_mat = 0.5.* (weight_mat .+ weight_mat')
+
+    # turn into a graph...
+    g = SimpleWeightedGraph{UInt16, Float32}(num_atoms)
+
+    for i=1:num_atoms, j=1:i
+        if weight_mat[i,j] > 0
+            add_edge!(g, i, j, weight_mat[i,j])
+        end
+    end
+
+    return g
 end
 
-# a few fcns just for readability
-site_index(site) = convert(UInt16, get(site, 2)) + 1
-site_distance(site) = convert(Float64, get(site, 1))
-site_atno(site) = [e.Z for e in site.species.elements][1] # for now just returns first one, can add checks to handle disordered stuff later maybe
-site_element(site) = [e.symbol for e in site.species.elements][1]
-
 # function to check if two sites are the same
+#=
 function are_same(site1, site2, atol=0.1)
     #site1.is_periodic_image(site2) might also work
     site1.distance(site2) < atol # angstroms
 end
-
-# check if two sites are equidistant (for cutting off neighbor lists consistently)
-# tolerance is in angstroms
-# note that this doesn't check that they're from the same central atom...
-function are_equidistant(site1, site2, atol=1e-4)
-    isapprox(site_distance(site1), site_distance(site2), atol=atol)
-end
+=#
 
 # function to add a bond in graph
 # either increment weight by 1 or create the weight
@@ -106,4 +119,11 @@ function graph_edgewidths(g, weight_mat)
         append!(edgewidths, weight_mat[e.src, e.dst])
     end
     return edgewidths
+end
+
+function visualize_graph(g, element_list)
+    # gplot doesn't work on weighted graphs
+    sg = SimpleGraph(adjacency_matrix(g))
+    plt = gplot(sg, nodefillc=graph_colors(element_list), nodelabel=element_list, edgelinewidth=graph_edgewidths(sg, g.weights))
+    display(plt)
 end

@@ -19,20 +19,21 @@ function are_equidistant(site1, site2, atol=1e-4)
 end
 
 # options for decay of bond weights with distance...
-inverse_square(x, scale) = (x/scale)^(-2.0)
-exp_decay(x, scale) = exp(-x/scale)
+inverse_square(x) = x^-2.0
+exp_decay(x) = exp(-x)
 
 #=
 Function to actually build graph from a CIF file of a crystal structure.
 Note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
 =#
-function build_graph(crystal_structure; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square, dist_decay_scale=radius)
-    # find neighbors, requires a cutoff radius
-    # returns a NxM Array of PyObject PeriodicSite
-    # ... except when it returns a list of N of lists of length M...
-    # each PeriodicSite is (site, distance, index, image)
-    # N is num sites in crystal, M is num neighbors
-    # N=4, M=43 for Ag2Br2-CH-NM with cutoff radius
+function build_graph(crystal_structure; radius=8.0, max_num_nbr=12; dist_decay_func=inverse_square)
+    #= find neighbors, requires a cutoff radius
+    returns a NxM Array of PyObject PeriodicSite
+    ... except when it returns a list of N of lists of length M...
+    each PeriodicSite is (site, distance, index, image)
+    N is num sites in crystal, M is num neighbors
+    N=4, M=43 for Ag2Br2-CH-NM with cutoff radius
+    =#
     all_nbrs = c.get_all_neighbors(radius, include_index=true)
 
     # sort by distance
@@ -62,7 +63,7 @@ function build_graph(crystal_structure; radius=8.0, max_num_nbr=12, dist_decay_f
                     next_nb = atom_nbs[nb_ind + 1]
                     # add another bond if it's the exact same distance to the next neighbor in the list
                     if are_equidistant(nb, next_nb)
-                        weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb), dist_decay_scale)
+                        weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb))
                     end
                 end
             end

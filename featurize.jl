@@ -146,7 +146,11 @@ function make_feature_vectors(features, nbins; atom_data_df=atom_data_df, logspa
     return sym_featurevec
 end
 
-# helper to subdivide vec according to nbins
+#=
+Divide up an already-constructed feature vector into "chunks" (presumably one for each feature) of lengths specified by the vector nbins.
+
+Sum of nbins should be equal to the length of vec.
+=#
 function chunk_vec(vec, nbins)
     chunks = fill(Bool[], size(nbins, 1))
     if !(size(vec,1)==sum(nbins))
@@ -198,8 +202,17 @@ function decode_feature_vector(vec, features, nbins; atom_data_df=atom_data_df)
         println("Vector is invalid!")
     else
         chunks = chunk_vec(vec, nbins)
-        # ...
+        # make dict from features to corresponding chunks
+        # another from features to tuples of min/max computed from df
+        # and one from feature to val bounds for this vector
+        # for each feature
+        #    make bins using min/max vals
+        #    find range of values according to that (onehot) chunk
+        #    put those into the feature -> valbounds dict
     end
+    # return feature -> valbounds dict, maybe optionally print something that's nicely formatted?
 end
 
 # next: rigorous check of featurization for different features, spacings, bin numbers, etc.
+# write this up as unit tests using Test.jl
+# probably also eventually make a package

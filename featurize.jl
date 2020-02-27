@@ -1,6 +1,10 @@
 #=
 Featurizing atomic data...
 
+TODO: possibly add ability to include structure-specific features e.g. coordination,
+then would need vector specific to each point in the structure rather than just each
+unique element
+
 Other features to look up/figure out:
 * electron affinity
 * (first) ionization energy
@@ -20,7 +24,9 @@ Other decisions to make:
 using PyCall
 using PeriodicTable
 using DataFrames
-using Flux:onehot
+using Flux:onehot, onecold
+
+global default_nbins = 10
 
 # we can probably skip radioactive stuff for now...
 max_atno = 83
@@ -30,8 +36,8 @@ all_elements = [e.symbol for e in elements[1:max_atno]]
 nums_to_skip = [2, 10, 18, 36, 54]
 
 avail_features = ["group", "row", "block", "atomic_mass", "atomic_radius", "van_der_waals_radius", "X"]
-categorical_features = ["group", "row", "block"]
-categorical_feature_vals = Dict("group"=>1:18, "row"=>1:6, "block"=>["s", "p", "d", "f"])
+global categorical_features = ["group", "row", "block"]
+global categorical_feature_vals = Dict("group"=>1:18, "row"=>1:6, "block"=>["s", "p", "d", "f"])
 
 # compile data... (and skip noble gases)
 pt = pyimport("pymatgen.core.periodic_table")
@@ -43,10 +49,12 @@ def isnone(x):
 """
 
 # reformat into a DataFrame for niceness
-atom_data_df = DataFrame(sym = all_elements)
+global atom_data_df = DataFrame(sym = all_elements)
 for feature in avail_features
     if feature=="block"
         feature_vals = ["a" for i in 1:max_atno]
+    elseif feature in ["group", "row"]
+        feature_vals = missings(Int64, max_atno)
     else
         feature_vals = missings(Float64, max_atno)
     end
@@ -56,7 +64,7 @@ for feature in avail_features
             feature_vals[i] = feature_val
         end
     end
-    atom_data_df[!, Symbol(feature)] = feature_vals
+    global atom_data_df[!, Symbol(feature)] = feature_vals
 end
 
 # drop rows we don't need...
@@ -72,74 +80,140 @@ for i in 1:size(rows,1)
 end
 atom_data_df.row = rows
 
-# return bin edges for a given feature given the corresponding column in the DataFrame
-function make_bins(df_col; n_bins=10, logspace=false)
-    min_val = minimum(skipmissing(df_col))
-    max_val = maximum(skipmissing(df_col))
-    if logspace
-        bin_edges = 10 .^range(log10(min_val), log10(max_val), length=n_bins+1)
-    else
-        bin_edges = range(min_val, max_val, length=n_bins+1)
+# compile some useful reference data...
+# min and max values of each feature...
+global fea_minmax = Dict()
+for feature in avail_features
+    if !(feature in categorical_features)
+        minval = minimum(skipmissing(atom_data_df[:, Symbol(feature)]))
+        maxval = maximum(skipmissing(atom_data_df[:, Symbol(feature)]))
+        fea_minmax[feature] = (minval, maxval)
     end
+end
 
-    return bin_edges
+# TODO: this
+#function get_default_nbins()
+#end
+
+#=
+Get bins for a given feature, intelligently handling categorical vs. continuous
+feature values. In the former case, returns the categories. In the later, returns
+bin edges.
+=#
+function get_bins(feature; nbins=default_nbins, logspaced=false)
+    if feature in categorical_features
+        bins = categorical_feature_vals[feature]
+    else
+        min_val = fea_minmax[feature][1]
+        max_val = fea_minmax[feature][2]
+        if logspaced
+            bins = 10 .^range(log10(min_val), log10(max_val), length=nbins+1)
+        else
+            bins = range(min_val, max_val, length=nbins+1)
+        end
+    end
+    return bins
 end
 
 #=
-Figure out which bin val sits in, return vector of 0's and a single 1 in the right bin.
-
-If it's on an edge it should end up in the lower bin (by my arbitrary choice, plus it probably will only happen for the absolute min and max values).
+Find which bin index a value sits in, intelligently handling both categorical
+and continous feature values.
 =#
-function onehot_bins(val, bin_edges)
-    onehot_vec = [false for i in 1:size(bin_edges,1)-1]
-    for i in 1:size(bin_edges, 1)-1
-        if (val >= bin_edges[i]) & (val <= bin_edges[i+1])
-            onehot_vec[i] = 1
+function which_bin(feature, val, bins=get_bins(feature))
+    if feature in categorical_features
+        bin_index = findfirst(isequal(val), bins)
+    else
+        bin_index = searchsorted(bins, val).stop
+        if bin_index == size(bins,1) # got the max value
+            bin_index = bin_index-1
         end
     end
+    return bin_index
+end
+
+#=
+Create onehot style vector, handling both categorical and continuous features.
+=#
+function onehot_bins(feature, val, bins=get_bins(feature))
+    if feature in categorical_features
+        len = size(bins,1)
+    else
+        len = size(bins,1)-1
+    end
+    onehot_vec = [false for i in 1:len]
+    onehot_vec[which_bin(feature, val, bins)] = true
     return onehot_vec
+end
+
+# inverse function to above
+function onecold_bins(feature, vec, bins)
+    if feature in categorical_features
+        # return value
+        decoded = onecold(vec, bins)
+    else
+        # return range of values
+        decoded = (onecold(vec, bins[1:end-1]), onecold(vec, bins[2:end]))
+    end
+    return decoded
+end
+
+#=
+Little helper function to check that the logspace vector/boolean is appropriate
+and convert it to a vector as needed.
+=#
+function get_logspaced_vec(vec, num_features)
+    if vec==false # default behavior
+        logspaced_vec = [false for i in 1:num_features]
+    elseif vec==true
+        logspaced_vec = [true for i in 1:num_features]
+    elseif size(vec, 1) == num_features # specified properly
+        logspaced_vec = vec
+    elseif size(vec, 1) < num_features
+        println("logspaced vector too short. Padding end with falses.")
+        logspaced_vec = hcat(vec, [false for i in 1:num_features-size(vec,1)])
+    elseif size(logspaced, 1) > num_features
+        println("logspaced vector too long. Cutting off at appropriate length.")
+        logspaced_vec = vec[1:num_features]
+    end
+    return logspaced_vec
 end
 
 #=
 Make custom feature vectors, using specified features and numbers of bins. Note that bin numbers will be ignored for categorical features (block, group, and row), but features and nbins vectors should still be the same length (there's probably a more elegant way to handle that).
 
-Optionally, feed in vector of booleans with trues at the index of any feature whose bins should be log spaced.
+Optionally, feed in vector of booleans with trues at the index of any (continous valued)
+feature whose bins should be log spaced.
 
 Returns a dictionary from element symbol => one-hot style feature vector, concatenated in order of feature list.
 =#
-function make_feature_vectors(features, nbins; atom_data_df=atom_data_df, logspaced=false)
-    # figure out spacing
-    if logspaced==false # default behavior
-        logspaced_vec = [false for i in 1:size(features,1)]
-    elseif logspaced==true
-        logspaced_vec = [true for i in 1:size(features,1)]
-    elseif size(logspaced, 1) == size(features, 1) # specified properly
-        logspaced_vec = logspaced
-    elseif size(logspaced, 1) < size(features, 1)
-        println("logspaced vector too short. Padding end with falses.")
-        logspaced_vec = hcat(logspaced, [false for i in 1:size(features,1)-size(logspaced,1)])
-    elseif size(logspaced, 1) > size(features, 1)
-        println("logspaced vector too long. Cutting off at appropriate length.")
-        logspaced_vec = logspaced[1:size(features,1)]
-    end
+function make_feature_vectors(features, nbins=default_nbins*ones(Int64, size(features,1)), logspaced=false)
+    num_features = size(features,1)
 
-    # make dict from feature name to bin edge list for continuous-valued features
-    features_bins = Dict(features[i] => make_bins(atom_data_df[:, Symbol(features[i])]; n_bins=Int64(nbins[i]), logspace=logspaced_vec[i]) for i in 1:size(features,1) if !(features[i] in categorical_features))
+    # figure out spacing for each feature
+    logspaced_vec = get_logspaced_vec(logspaced, num_features)
 
+    # make dict from feature name to bins
+    features_bins = Dict(features[i] => get_bins(features[i]; nbins=Int64(nbins[i]), logspaced=logspaced_vec[i]) for i in 1:num_features)
+
+    # dict from feature name to number of bins for that feature
+    features_nbins = Dict(zip(features, nbins))
+
+    # dict from element symbol to feature vec of that element
+    # (if we do any structure-specific features later, e.g. coordination or something,
+    # this will have to iterate over every atom in the structure instead...)
+    # (but possibly would just want to append those to the end anyway...)
     sym_featurevec = Dict()
-    # for categorical features, can use onehot from Flux
     for i in 1:size(atom_data_df,1)
         el = atom_data_df.sym[i]
         featurevec = []
         # make onehot vector for each feature
         for feature in features
             feature_val = atom_data_df[i, Symbol(feature)]
-            if feature in categorical_features
-                subvec = onehot(feature_val, categorical_feature_vals[feature])
-            else
-                subvec = onehot_bins(feature_val, features_bins[feature])
-            end
+            subvec = onehot_bins(feature, feature_val, get_bins(feature; nbins=features_nbins[feature]))
             append!(featurevec, subvec)
+            if(el=="C")
+                println(feature, feature_val, subvec)
+            end
         end
         sym_featurevec[el] = featurevec
     end
@@ -196,21 +270,22 @@ Function to invert the binning process. Useful to check that it's working proper
 
 Need to feed in a feature vector as well as the lists of features and bin numbers that were used to encode it, and the dataframe containing the atomic data.
 =#
-function decode_feature_vector(vec, features, nbins; atom_data_df=atom_data_df)
+function decode_feature_vector(vec, features, nbins; logspaced=false)
     # First, check that the featurization is valid
-    if !(vec_valid(vec))
+    if !(vec_valid(vec, nbins))
         println("Vector is invalid!")
     else
         chunks = chunk_vec(vec, nbins)
         # make dict from features to corresponding chunks
-        # another from features to tuples of min/max computed from df
-        # and one from feature to val bounds for this vector
-        # for each feature
-        #    make bins using min/max vals
-        #    find range of values according to that (onehot) chunk
-        #    put those into the feature -> valbounds dict
+        fea_chunks = Dict(zip(features, chunks))
+
+        # and one from feature to bin bounds for this vector
+        num_features = size(features,1)
+        logspaced_vec = get_logspaced_vec(logspaced, num_features)
+        fea_bins = Dict(features[i]=>get_bins(features[i]; nbins=nbins[i], logspaced=logspaced_vec[i]) for i in 1:num_features)
+
+        return Dict(feature=>onecold_bins(feature, fea_chunks[feature], fea_bins[feature]) for feature in features)
     end
-    # return feature -> valbounds dict, maybe optionally print something that's nicely formatted?
 end
 
 # next: rigorous check of featurization for different features, spacings, bin numbers, etc.

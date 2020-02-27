@@ -211,9 +211,6 @@ function make_feature_vectors(features, nbins=default_nbins*ones(Int64, size(fea
             feature_val = atom_data_df[i, Symbol(feature)]
             subvec = onehot_bins(feature, feature_val, get_bins(feature; nbins=features_nbins[feature]))
             append!(featurevec, subvec)
-            if(el=="C")
-                println(feature, feature_val, subvec)
-            end
         end
         sym_featurevec[el] = featurevec
     end

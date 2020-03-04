@@ -1,7 +1,9 @@
 using PyCall
+using GraphPlot, Colors
+using LightGraphs, SimpleWeightedGraphs
 
 # import pymatgen stuff (to read in CIF and find neighbors)
-s = pyimport("pymatgen.core.structure")
+global s = pyimport("pymatgen.core.structure")
 
 # a few fcns just for readability
 site_index(site) = convert(UInt16, get(site, 2)) + 1
@@ -26,7 +28,9 @@ exp_decay(x) = exp(-x)
 Function to actually build graph from a CIF file of a crystal structure.
 Note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
 =#
-function build_graph(crystal_structure; radius=8.0, max_num_nbr=12; dist_decay_func=inverse_square)
+function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square)
+    c = s.Structure.from_file(cif_path)
+    num_atoms = size(c)[1]
     #= find neighbors, requires a cutoff radius
     returns a NxM Array of PyObject PeriodicSite
     ... except when it returns a list of N of lists of length M...
@@ -55,7 +59,7 @@ function build_graph(crystal_structure; radius=8.0, max_num_nbr=12; dist_decay_f
             global nb_ind = site_index(nb)
             # if we're under the max, add it for sure
             if nb_num < max_num_nbr
-                weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb), dist_decay_scale)
+                weight_mat[atom_ind, nb_ind] = weight_mat[atom_ind, nb_ind] + dist_decay_func(site_distance(nb))
             # if we're at/above the max, add if distance is the same
             else
                 # check we're not on the last one

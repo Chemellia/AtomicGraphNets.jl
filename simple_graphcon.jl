@@ -1,26 +1,40 @@
 #using PyCall
 using GeometricFlux
-using SimpleWeightedGraphs, MetaGraphs
+using SimpleWeightedGraphs
 using GraphPlot, Colors
+using CSV
+include("graph_functions.jl")
+include("featurize.jl")
+include("layers.jl")
 
-# from source code:
-# (g::GCNConv)(X::AbstractMatrix) = g.σ.(g.weight * X * g.norm + g.bias)
-# σ is identity so...
-# tl(X) = tl.weight * X * tl.norm + tl.bias
+# TODO: think more about data structures
+# need to maintain association between node indices and elements,
+# among other things...
+# maybe do a MetaGraph to store that stuff (and build featurization)
+# then cast to SWG for actual learning...
 
-adjmat = [[0. 8.]; [8. 0.]]
-I = one(adjmat) # identity matrix
-#norm = normalized_laplacian(adjmat+I)
-# TODO: figure out what this should be - normalized or not? +I or not?
-norm = laplacian_matrix(adjmat + I)
-bias = zeros(2,2)
+# define some high-level options
+num_conv = 3
+#pool_func =
+prop = "formation_energy_per_atom"
+datadir = "../MP_data/"
+id = "task_id"
 
-# NOTE: in Tian's SI example, it's a 3 => 1 convolution for feature length so you go straight to a scalar after one layer, but GCNConv lets us do whatever length we want. This is currently working analogously to the KCl example in the SI
+# dataset...first, read in outputs
+info = CSV.read(string(datadir,prop,".csv"))
+y = info[!, Symbol(prop)]
 
-# TODO: probably define custom layer origCGCNN or something  that explicitly has self weight, conv weight, and bias to be maximally similar to Tian's 
+# next, make graphs
+input_graphs = []
+for r in eachrow(info)
+    cifpath = string(datadir,prop,"_cifs/",r[Symbol(id)],".cif")
+    append!(input_graphs, build_graph(cifpath))
 
-in_feat = [[1 0]; [0 1]] # maybe these should be concatenated?
-wt = ones(2,2)
-layer = GCNConv(wt, bias, norm, identity)
+# featurization
+# ...
 
-println(layer(in_feat))
+# build the network
+# ...
+
+# train
+# ...

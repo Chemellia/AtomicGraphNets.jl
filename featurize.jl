@@ -20,6 +20,8 @@ Things I'd like, but may be harder:
 Other decisions to make:
 * Should ranges of values (over which to bin) be fixed even if we're only using a subset of elements that don't contain the full range? For example, electronegativity ranges from 0.79 to 3.98 but if a subset of values only goes from 0.98 to 2.0 should the bins go over the whole range for consistency across different analyses, even though some bins would never be occupied for that subset?
 * Is there a more elegant/abstracted way to distinguish between categorical and continuous features?
+
+NOTE: if we experiment with other featurizations that don't just contain 0's and 1's, normalized vs. non-normalized graph Laplacians will become important!
 =#
 using PyCall
 using PeriodicTable

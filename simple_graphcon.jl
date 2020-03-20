@@ -1,6 +1,10 @@
+#=
+ Train a simple network to predict formation energy per atom (downloaded from Materials Project).
+=#
+
 #using PyCall
-using GeometricFlux
-using SimpleWeightedGraphs
+#using GeometricFlux
+#using SimpleWeightedGraphs, MetaGraph
 using GraphPlot, Colors
 using CSV
 include("graph_functions.jl")
@@ -20,18 +24,24 @@ prop = "formation_energy_per_atom"
 datadir = "../MP_data/"
 id = "task_id"
 
+# atom featurization, pretty arbitrary choices for now
+features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
+num_bins = [18, 6, 4, 20, 10, 10]
+logspaced = [false, false, false, true, true, false]
+atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
+
 # dataset...first, read in outputs
 info = CSV.read(string(datadir,prop,".csv"))
 y = info[!, Symbol(prop)]
 
 # next, make graphs
-input_graphs = []
-for r in eachrow(info)
+graphs_elements = []
+for r in eachrow(info[1:100,:])
     cifpath = string(datadir,prop,"_cifs/",r[Symbol(id)],".cif")
-    append!(input_graphs, build_graph(cifpath))
+    append!(graphs_elements, [build_graph(cifpath)])
+    # TODO: there is probably a smarter way to store this information...
+end
 
-# featurization
-# ...
 
 # build the network
 # ...

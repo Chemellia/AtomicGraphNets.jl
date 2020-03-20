@@ -1,3 +1,7 @@
+#=
+Note: MetaGraphs would seem on face to be the elegant way to store atom features, bond lengths, etc., but in practice it's much clunkier because it doesn't support the same functions and GeometricFlux doesn't really play nice with it. So for now this is all done with SimpleWeightedGraphs. Can revisit MetaGraphs in the future if this situation changes...
+=#
+
 using PyCall
 using GraphPlot, Colors
 using LightGraphs, SimpleWeightedGraphs
@@ -31,6 +35,10 @@ Note that `max_num_nbr` is a "soft" max, in that if there are more of the same d
 function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square)
     c = s.Structure.from_file(cif_path)
     num_atoms = size(c)[1]
+
+    # list of atom symbols
+    atom_ids = [site_element(s) for s in c]
+
     #= find neighbors, requires a cutoff radius
     returns a NxM Array of PyObject PeriodicSite
     ... except when it returns a list of N of lists of length M...
@@ -83,13 +91,14 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     # turn into a graph...
     g = SimpleWeightedGraph{UInt16, Float32}(num_atoms)
 
+    # set weights
     for i=1:num_atoms, j=1:i
         if weight_mat[i,j] > 0
             add_edge!(g, i, j, weight_mat[i,j])
         end
     end
 
-    return g
+    return Dict("graph"=>g, "el_syms"=>atom_ids)
 end
 
 # function to check if two sites are the same

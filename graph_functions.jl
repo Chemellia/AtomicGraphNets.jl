@@ -89,14 +89,7 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     weight_mat = 0.5.* (weight_mat .+ weight_mat')
 
     # turn into a graph...
-    g = SimpleWeightedGraph{UInt16, Float32}(num_atoms)
-
-    # set weights
-    for i=1:num_atoms, j=1:i
-        if weight_mat[i,j] > 0
-            add_edge!(g, i, j, weight_mat[i,j])
-        end
-    end
+    g = SimpleWeightedGraph(weight_mat)
 
     return Dict("graph"=>g, "el_syms"=>atom_ids)
 end

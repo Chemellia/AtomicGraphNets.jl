@@ -1,7 +1,7 @@
 using PyCall
 # need pymatgen installed in Julia's pythondir, can do with Conda.jl
 using GeometricFlux
-using LightGraphs, SimpleWeightedGraphs, MetaGraphs
+using SimpleWeightedGraphs, MetaGraphs
 using GraphPlot, Colors
 
 include("functions.jl")

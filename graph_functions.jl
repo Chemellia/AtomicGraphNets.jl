@@ -4,22 +4,34 @@ Note: MetaGraphs would seem on face to be the elegant way to store atom features
 
 using PyCall
 using GraphPlot, Colors
-using LightGraphs, SimpleWeightedGraphs
+using LightGraphs, SimpleWeightedGraphs # need LightGraphs for adjacency_matrix fcn
 
 # import pymatgen stuff (to read in CIF and find neighbors)
 global s = pyimport("pymatgen.core.structure")
 
-# a few fcns just for readability
+# a few fcns just for readability...
+
+"Return the index of a given site in the structure."
 site_index(site) = convert(UInt16, get(site, 2)) + 1
+
+"Return the distance associated with a site in a neighbor list."
 site_distance(site) = convert(Float64, get(site, 1))
-site_atno(site) = [e.Z for e in site.species.elements][1] # for now just returns first one, can add checks to handle disordered stuff later maybe
+
+# these next two functions return the information for the first species in a list – there should only be one because otherwise the structure would be disordered and we probably shouldn't be building a graph...(or maybe we add some fancy functionality later to do superpositions of species?)
+
+"Return atomic number associated with a site."
+site_atno(site) = [e.Z for e in site.species.elements][1]
+
+"Return atomic symbol associated with a site."
 site_element(site) = [e.symbol for e in site.species.elements][1]
 
-#=
-check if two sites are equidistant (for cutting off neighbor lists consistently)
-tolerance is in angstroms
-note that this doesn't check that they're from the same central atom...
-=#
+"""
+    are_equidistant(site1, site2)
+
+Check if site1 and site2 are equidistant to within tolerance atol, in angstroms (for cutting off neighbor lists consistently).
+
+Note that this only works if site1 and site2 are from a neighbor list from the same central atom.
+"""
 function are_equidistant(site1, site2, atol=1e-4)
     isapprox(site_distance(site1), site_distance(site2), atol=atol)
 end
@@ -28,10 +40,17 @@ end
 inverse_square(x) = x^-2.0
 exp_decay(x) = exp(-x)
 
-#=
-Function to actually build graph from a CIF file of a crystal structure.
-Note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the twelfth, all of those will be added (may reconsider this later if it makes things messy)
-=#
+"""
+Function to build graph from a CIF file of a crystal structure.
+
+Note that `max_num_nbr` is a "soft" max, in that if there are more of the same distance as the last, all of those will be added (may reconsider this later if it makes things messy)
+
+# Arguments
+- `cif_path::String`: path to CIF file
+- `radius::Float=8.0`: cutoff radius for atoms to be considered neighbors (in angstroms)
+- `max_num_nbr::Integer=12`: maximum number of neighbors to include (even if more fall within cutoff radius)
+- `dist_decay_func`: function (e.g. inverse_square or exp_decay) to determine falloff of graph edge weights with neighbor distance
+"""
 function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square)
     c = s.Structure.from_file(cif_path)
     num_atoms = size(c)[1]
@@ -57,7 +76,7 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     end
 
     # iterate through each list of neighbors (corresponding to neighbors of a given atom) to find bonds (eventually, graph edges)
-    weight_mat = zeros(num_atoms, num_atoms)
+    weight_mat = zeros(Float64, num_atoms, num_atoms)
     for atom_ind in 1:num_atoms
         this_atom = get(c, atom_ind-1)
         atom_nbs = all_nbrs[atom_ind]
@@ -82,16 +101,16 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
         end
     end
 
-    # normalize weights
-    weight_mat = weight_mat ./ maximum(weight_mat)
-
     # average across diagonal (because neighborness isn't strictly symmetric in the way we're defining it here)
     weight_mat = 0.5.* (weight_mat .+ weight_mat')
+
+    # normalize weights
+    weight_mat = weight_mat ./ maximum(weight_mat)
 
     # turn into a graph...
     g = SimpleWeightedGraph(weight_mat)
 
-    return Dict("graph"=>g, "el_syms"=>atom_ids)
+    return (g, atom_ids)
 end
 
 # function to check if two sites are the same
@@ -109,16 +128,16 @@ end
 #    add_edge!(g, ind1, ind2, curr_wt + 1)
 #end
 
-# to make node colors for graph visualization
+"Get a list of colors to use for graph visualization."
 function graph_colors(atno_list, seed_color=colorant"cyan4")
     atom_types = unique(atno_list)
-    atom_type_inds = Dict(atom_types[i]=>i for i in 1:size(atom_types)[1])
+    atom_type_inds = Dict(atom_types[i]=>i for i in 1:length(atom_types))
     color_inds = [atom_type_inds[i] for i in atno_list]
-    colors = distinguishable_colors(size(atom_types)[1], seed_color)
+    colors = distinguishable_colors(length(atom_types), seed_color)
     return colors[color_inds]
 end
 
-# return vector of edge widths proportional to number of bonds
+"Compute edge widths (proportional to weights on graph) for graph visualization."
 function graph_edgewidths(g, weight_mat)
     edgewidths = []
     # should be able to do this as
@@ -128,6 +147,7 @@ function graph_edgewidths(g, weight_mat)
     return edgewidths
 end
 
+"Visualize a given graph."
 function visualize_graph(g, element_list)
     # gplot doesn't work on weighted graphs
     sg = SimpleGraph(adjacency_matrix(g))

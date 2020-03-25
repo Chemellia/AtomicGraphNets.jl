@@ -9,15 +9,17 @@ using GeometricFlux
 """
     CGCNConv(graph, in=>out)
     CGCNConv(graph, in=>out, σ)
-Crystal Graph convolutional layer.
+
+Crystal graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original CGCNN structure, so explicitly has self and convolutional weights separately.
+
 # Arguments
-- `graph`: should be a adjacency matrix, `SimpleGraph`, `SimpleDiGraph` (from LightGraphs) or `SimpleWeightedGraph`, `SimpleWeightedDiGraph` (from SimpleWeightedGraphs).
+- `graph`: either an adjacency matrix or a SimpleWeightedGraph.
 - `in`: the dimension of input features.
 - `out`: the dimension of output features.
-- `σ`: activation function
+- `bias::Bool=true`: keyword argument, whether to learn the additive bias.
+
 Data should be stored in (# features, # nodes) order.
-For example, a 1000-node graph each node of which poses 100 features is constructed.
-The input data would be a `1000×100` array.
+For example, if the graph has 10 nodes, each of which has a feature vector of length 100, input data should be of dimension `10 x 100`.
 """
 struct CGCNConv{T,F}
     selfweight::AbstractMatrix{T}
@@ -27,13 +29,13 @@ struct CGCNConv{T,F}
     σ::F
 end
 
-function CGCNConv(adj::AbstractMatrix, ch::Pair{<:Integer,<:Integer}, σ = identity;
-                 init = glorot_uniform, T::DataType=Float32, bias::Bool=true)
+
+function CGCNConv(adj::AbstractMatrix, ch::Pair{<:Integer,<:Integer}, σ = identity; init = glorot_uniform, T::DataType=Float32, bias::Bool=true)
     N = size(adj, 1)
     b = init(ch[2], N)
-    CGCNConv(init(ch[2], ch[1]), init(ch[2], ch[1]), b, normalized_laplacian(adj, T), σ)
+    CGCNConv(init(ch[2], ch[1]), init(ch[2], ch[1]), b, normalized_laplacian(adj, T), σ) # don't add identity in here because we're doing self weight separately
 end
 
-@functor GCNConv
+@functor CGCNConv
 
-(g::GCNConv)(X::AbstractMatrix) = g.σ.(g.convweight * X * g.norm + g.selfweight * X + g.bias)
+(g::CGCNConv)(X::AbstractMatrix) = g.σ.(g.convweight * X * g.norm + g.selfweight * X + g.bias)

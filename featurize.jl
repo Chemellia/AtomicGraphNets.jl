@@ -56,9 +56,9 @@ for feature in avail_features
     if feature=="block"
         feature_vals = ["a" for i in 1:max_atno]
     elseif feature in ["group", "row"]
-        feature_vals = missings(Int64, max_atno)
+        feature_vals = missings(Int32, max_atno)
     else
-        feature_vals = missings(Float64, max_atno)
+        feature_vals = missings(Float32, max_atno)
     end
     for i in keys(atom_data)
         feature_val = getproperty(atom_data[i], feature)
@@ -75,7 +75,7 @@ all_elements = [all_elements[i] for i in 1:max_atno if !(i in nums_to_skip)]
 
 # relabel rows for lanthanoids (should be 6 not 8)
 rows = atom_data_df.row
-for i in 1:size(rows,1)
+for i in 1:length(rows)
     if rows[i]==8.0
         rows[i] = 6.0
     end
@@ -97,11 +97,7 @@ end
 #function get_default_nbins()
 #end
 
-#=
-Get bins for a given feature, intelligently handling categorical vs. continuous
-feature values. In the former case, returns the categories. In the later, returns
-bin edges.
-=#
+"Get bins for a given feature, intelligently handling categorical vs. continuous feature values. In the former case, returns the categories. In the later, returns bin edges."
 function get_bins(feature; nbins=default_nbins, logspaced=false)
     if feature in categorical_features
         bins = categorical_feature_vals[feature]
@@ -117,37 +113,82 @@ function get_bins(feature; nbins=default_nbins, logspaced=false)
     return bins
 end
 
-#=
-Find which bin index a value sits in, intelligently handling both categorical
-and continous feature values.
-=#
+
+"Find which bin index a value sits in, intelligently handling both categorical and continous feature values."
 function which_bin(feature, val, bins=get_bins(feature))
     if feature in categorical_features
         bin_index = findfirst(isequal(val), bins)
     else
         bin_index = searchsorted(bins, val).stop
-        if bin_index == size(bins,1) # got the max value
+        if bin_index == length(bins) # got the max value
             bin_index = bin_index-1
         end
     end
     return bin_index
 end
 
-#=
+"""
+    onehot_bins(feature, val)
+    onehot_bins(feature, val, bins)
+
 Create onehot style vector, handling both categorical and continuous features.
-=#
+
+# Arguments
+- `feature::String`: feature being encoded
+- `val`: (Float or String) value of feature to encode
+- `bins::Array`: categorical values or bin edges if continouus feature
+
+# Examples
+```jldoctest
+julia> onehot_bins("cont_feature", 3, [0,2,4,6])
+3-element Array{Bool,1}:
+ 0
+ 1
+ 0
+
+julia> onehot_bins("cat_feature", 3, [1,2,3])
+3-element Array{Bool,1}:
+ 0
+ 0
+ 1
+```
+
+See also: [onecold_bins](@ref), [onehot](@ref Flux.onehot)
+
+"""
 function onehot_bins(feature, val, bins=get_bins(feature))
     if feature in categorical_features
-        len = size(bins,1)
+        len = length(bins)
     else
-        len = size(bins,1)-1
+        len = length(bins)-1
     end
     onehot_vec = [false for i in 1:len]
     onehot_vec[which_bin(feature, val, bins)] = true
     return onehot_vec
 end
 
-# inverse function to above
+"""
+    onecold_bins(feature, vec, bins)
+
+Inverse function to onehot_bins, decodes a vector corresponding to a given feature, given the bins that were used to encode it.
+
+# Arguments
+- `feature::String`: feature being encoded
+- `vec::Array`: vector (such as produced by [onehot_bins](@ref))
+- `bins::Array`: categorical values or bin edges if continouus feature
+
+# Examples
+```jldoctest
+julia> onecold_bins("cont_feature", [0,1,0], [0,2,4,6])
+(2,4)
+
+julia> onecold_bins("cat_feature", [0,0,1], [1,2,3])
+3
+```
+
+See also: [onehot_bins](@ref), [onecold](@ref Flux.onecold)
+
+"""
 function onecold_bins(feature, vec, bins)
     if feature in categorical_features
         # return value
@@ -159,18 +200,16 @@ function onecold_bins(feature, vec, bins)
     return decoded
 end
 
-#=
-Little helper function to check that the logspace vector/boolean is appropriate
-and convert it to a vector as needed.
-=#
+
+"Little helper function to check that the logspace vector/boolean is appropriate and convert it to a vector as needed."
 function get_logspaced_vec(vec, num_features)
     if vec==false # default behavior
         logspaced_vec = [false for i in 1:num_features]
     elseif vec==true
         logspaced_vec = [true for i in 1:num_features]
-    elseif size(vec, 1) == num_features # specified properly
+    elseif length(vec) == num_features # specified properly
         logspaced_vec = vec
-    elseif size(vec, 1) < num_features
+    elseif length(vec) < num_features
         println("logspaced vector too short. Padding end with falses.")
         logspaced_vec = hcat(vec, [false for i in 1:num_features-size(vec,1)])
     elseif size(logspaced, 1) > num_features
@@ -180,14 +219,22 @@ function get_logspaced_vec(vec, num_features)
     return logspaced_vec
 end
 
-#=
+"""
+    make_feature_vectors(features)
+    make_feature_vectors(features, nbins)
+    make_feature_vectors(features, nbins, logspaced)
+
 Make custom feature vectors, using specified features and numbers of bins. Note that bin numbers will be ignored for categorical features (block, group, and row), but features and nbins vectors should still be the same length (there's probably a more elegant way to handle that).
 
-Optionally, feed in vector of booleans with trues at the index of any (continous valued)
-feature whose bins should be log spaced.
+Optionally, feed in vector of booleans with trues at the index of any (continous valued) feature whose bins should be log spaced.
+
+# Arguments
+- `features::Array{String,1}`: list of features to be encoded
+- `nbins::Array{Integer,1}`: number of bins for each feature (in same order)
+- `logspaced::Array{Bool,1}=false`: whether or not to logarithmically space each feature
 
 Returns a dictionary from element symbol => one-hot style feature vector, concatenated in order of feature list.
-=#
+"""
 function make_feature_vectors(features, nbins=default_nbins*ones(Int64, size(features,1)), logspaced=false)
     num_features = size(features,1)
 
@@ -214,19 +261,29 @@ function make_feature_vectors(features, nbins=default_nbins*ones(Int64, size(fea
             subvec = onehot_bins(feature, feature_val, get_bins(feature; nbins=features_nbins[feature]))
             append!(featurevec, subvec)
         end
-        sym_featurevec[el] = featurevec
+        sym_featurevec[el] = featurevec # need transpose because of how graphcon works
     end
     return sym_featurevec
 end
 
-#=
+"""
+    chunk_vec(vec, nbins)
+
 Divide up an already-constructed feature vector into "chunks" (presumably one for each feature) of lengths specified by the vector nbins.
 
 Sum of nbins should be equal to the length of vec.
-=#
+
+# Examples
+```jldoctest
+julia> chunk_vec([1,0,0,1,0], [3,2])
+2-element Array{Array{Bool,1},1}:
+ [1, 0, 0]
+ [1, 0]
+ ```
+"""
 function chunk_vec(vec, nbins)
     chunks = fill(Bool[], size(nbins, 1))
-    if !(size(vec,1)==sum(nbins))
+    if !(length(vec)==sum(nbins))
         println("Total number of bins doesn't match length of feature vector.")
         return chunks
     else
@@ -242,18 +299,18 @@ function chunk_vec(vec, nbins)
     return chunks
 end
 
-#=
-Function for debugging. Just checks that each subvector in a featurization is a valid one-hot encoding (one true and otherwise all falses).
-=#
+"""
+Check that each subvector in a featurization is a valid one-hot encoding (one true and otherwise all falses).
+"""
 function vec_valid(vec, nbins)
     result = true
     # are there the right number of total bins?
     chunks = chunk_vec(vec, nbins)
-    if chunks == fill(Bool[], size(nbins, 1))
+    if chunks == fill(Bool[], length(nbins))
         result = false
     else
         # does each subvector have exactly one true value?
-        for i in 1:size(nbins, 1)
+        for i in 1:length(nbins)
             subvec = chunks[i]
             if !(sum(subvec)==1)
                 println("Subvector ", i, " is invalid.")
@@ -264,12 +321,12 @@ function vec_valid(vec, nbins)
     return result
 end
 
-#=
+"""
 Function to invert the binning process. Useful to check that it's working properly, or just to inspect properties once they've been encoded.
 
-Need to feed in a feature vector as well as the lists of features and bin numbers that were used to encode it, and the dataframe containing the atomic data.
-=#
-function decode_feature_vector(vec, features, nbins; logspaced=false)
+Need to feed in a feature vector as well as the lists of features and bin numbers that were used to encode it.
+"""
+function decode_feature_vector(vec, features, nbins, logspaced=false)
     # First, check that the featurization is valid
     if !(vec_valid(vec, nbins))
         println("Vector is invalid!")
@@ -279,14 +336,10 @@ function decode_feature_vector(vec, features, nbins; logspaced=false)
         fea_chunks = Dict(zip(features, chunks))
 
         # and one from feature to bin bounds for this vector
-        num_features = size(features,1)
+        num_features = length(features)
         logspaced_vec = get_logspaced_vec(logspaced, num_features)
         fea_bins = Dict(features[i]=>get_bins(features[i]; nbins=nbins[i], logspaced=logspaced_vec[i]) for i in 1:num_features)
 
         return Dict(feature=>onecold_bins(feature, fea_chunks[feature], fea_bins[feature]) for feature in features)
     end
 end
-
-# next: rigorous check of featurization for different features, spacings, bin numbers, etc.
-# write this up as unit tests using Test.jl
-# probably also eventually make a package

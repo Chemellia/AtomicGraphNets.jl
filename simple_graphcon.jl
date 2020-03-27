@@ -8,8 +8,24 @@ using SparseArrays
 using Random, Statistics
 using Flux
 include("graph_functions.jl")
+include("featurize.jl")
 include("layers.jl")
 
+# data-related options
+num_pts = 10 # how many points to use? Up to 32530
+train_frac = 0.2 # what fraction for training?
+num_train = Int32(round(train_frac) * num_pts)
+num_test = num_pts - num_train
+prop = "formation_energy_per_atom"
+datadir = "../MP_data/"
+id = "task_id" # field by which to label each input material
+
+# atom featurization, pretty arbitrary choices for now
+features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
+num_bins = [18, 6, 4, 16, 10, 10]
+num_features = sum(num_bins) # we'll use this later
+logspaced = [false, false, false, true, true, false]
+atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?

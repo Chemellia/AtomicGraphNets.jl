@@ -8,24 +8,8 @@ using SparseArrays
 using Random, Statistics
 using Flux
 include("graph_functions.jl")
-include("featurize.jl")
 include("layers.jl")
 
-# data-related options
-num_pts = 10 # how many points to use? Up to 32530
-train_frac = 0.2 # what fraction for training?
-num_train = Int32(round(train_frac * num_pts))
-num_test = num_pts - num_train
-prop = "formation_energy_per_atom"
-datadir = "../MP_data/"
-id = "task_id" # field by which to label each input material
-
-# atom featurization, pretty arbitrary choices for now
-features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
-num_bins = [18, 6, 4, 16, 10, 10] # cooked up to sum to 64 to make some later things easy...
-num_features = sum(num_bins) # we'll use this later
-logspaced = [false, false, false, true, true, false]
-atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?
@@ -73,11 +57,7 @@ train_data = zip(train_input, train_output)
 # * collapsing nodal dimension by a straight-up average right now, maybe need a custom layer that does these in one step?
 #model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
 
-# simple example for debugging
-#model = Chain(x->CGCNConv(num_features=>num_features)(x[1], x[2]), x->mean(x))
-#model = Chain(x->CGCNConv(num_features=>num_features)(x[1], x[2]), x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), MeanPool((32,16)))
-#model = Chain(CGCNConv(num_features=>num_features), x->reshape(x[1], (size(x[1])..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), NodeMeanPool())
-#model = Chain(CGCNConv(num_features=>num_features), x->reshape(x, (size(x)..., 1, 1)), GlobalMeanPool())
+# a way more simple example
 model = Chain(CGCNConv(num_features=>num_features), x->x[1], x->reshape(x, (size(x)..., 1, 1)), x->mean(x))
 
 # this works fine

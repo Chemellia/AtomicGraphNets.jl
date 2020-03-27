@@ -32,6 +32,7 @@ global default_nbins = 10
 
 # we can probably skip radioactive stuff for now...
 max_atno = 83
+
 all_elements = [e.symbol for e in elements[1:max_atno]]
 
 # leave off noble gases too
@@ -251,7 +252,7 @@ function make_feature_vectors(features, nbins=default_nbins*ones(Int64, size(fea
     # (if we do any structure-specific features later, e.g. coordination or something,
     # this will have to iterate over every atom in the structure instead...)
     # (but possibly would just want to append those to the end anyway...)
-    sym_featurevec = Dict()
+    sym_featurevec = Dict{String, Array{Bool,1}}()
     for i in 1:size(atom_data_df,1)
         el = atom_data_df.sym[i]
         featurevec = []

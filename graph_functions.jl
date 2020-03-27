@@ -76,7 +76,7 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     end
 
     # iterate through each list of neighbors (corresponding to neighbors of a given atom) to find bonds (eventually, graph edges)
-    weight_mat = zeros(Float64, num_atoms, num_atoms)
+    weight_mat = zeros(Float32, num_atoms, num_atoms)
     for atom_ind in 1:num_atoms
         this_atom = get(c, atom_ind-1)
         atom_nbs = all_nbrs[atom_ind]
@@ -108,7 +108,7 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     weight_mat = weight_mat ./ maximum(weight_mat)
 
     # turn into a graph...
-    g = SimpleWeightedGraph(weight_mat)
+    g = SimpleWeightedGraph{Int32, Float32}(weight_mat)
 
     return (g, atom_ids)
 end

@@ -13,7 +13,10 @@ Herein you can find the beginnings of a package to implement [Crystal Graph Conv
 
 * Build graphs (as [SimpleWeightedGraphs](https://github.com/JuliaGraphs/SimpleWeightedGraphs.jl)) from CIF files using [PyCall](https://github.com/JuliaPy/PyCall.jl) to [pymatgen](https://pymatgen.org) functions
 * Visualization using [GraphPlot](https://github.com/JuliaGraphs/GraphPlot.jl), check out the `visualize_graph` function in the `graph_functions.jl` file, you can make pretty pictures like these, whether the graph is simpler or more complicated (thickness of connections indicates weight of edge in graph (higher weights for nearer neighbors)):
-![](img/graph_EuMgTl2.png)![](img/graph_K4W4O14.png)
+
+<img src="img/graph_EuMgTl2.png" alt="graph_EuMgTl2" width="407" height="300">
+<img src="img/graph_K4W4O14.png" alt="graph_K4W414O14" width="413" height="300">
+
 * Flexible featurization (currently onehot-style) and decoding: choose features to include, level of discretization, etc., and directly decode feature vectors to check values:
 ![](img/featurize_demo.gif)
 

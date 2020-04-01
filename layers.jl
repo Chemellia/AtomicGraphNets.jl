@@ -1,7 +1,7 @@
-using Flux
-using Flux: glorot_uniform
-using Flux: @functor
-using GeometricFlux
+using Flux, GeometricFlux
+using Flux: glorot_uniform, @functor
+using Zygote: @adjoint, @nograd
+using LinearAlgebra, SparseArrays
 
 struct CGCNConv{T,F}
     selfweight::Array{T,2}
@@ -26,7 +26,7 @@ function CGCNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; init=glorot_unifor
     selfweight = init(ch[2], ch[1])
     convweight = init(ch[2], ch[1])
     b = bias ? init(ch[2], 1) : zeros(T, ch[2], 1)
-    CGCNConv(selfweight, convweight, b, σ) # don't add identity in here because we're doing self weight separately
+    CGCNConv(selfweight, convweight, b, σ)
 end
 
 @functor CGCNConv
@@ -42,10 +42,21 @@ end
 #(l::CGCNConv)(input::Tuple{Array{Bool,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
 
 # testing without bias
-(l::CGCNConv)(input::Tuple{Array{Bool,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1]), input[2]
+(l::CGCNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1]), input[2]
 
 # two inputs rather than tuple
 #(l::CGCNConv)(input::Array{Bool,2}, adj::SparseMatrixCSC{Float32,Int64}) = l.σ.(l.convweight * input * normalized_laplacian(adj, Float32) + l.selfweight * input + hcat([l.bias for i in 1:size(adj, 1)]...))
 
 # two inputs, no bias, only returning matrix for now
 #(l::CGCNConv)(input::Array{Bool,2}, adj::SparseMatrixCSC{Float32,Int64}) = l.σ.(l.convweight * input * normalized_laplacian(adj, Float32) + l.selfweight * input)
+
+# fixes from Dhairya...
+@adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
+  SparseMatrixCSC{T,N}(arr), Δ -> (collect(Δ),)
+end
+@nograd LinearAlgebra.diagm
+
+@adjoint function Broadcast.broadcasted(Float32, a::SparseMatrixCSC{T,N}) where {T,N}
+  Float32.(a), Δ -> (nothing, T.(Δ), )
+end
+@nograd issymmetric

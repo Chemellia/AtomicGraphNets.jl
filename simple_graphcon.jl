@@ -7,14 +7,15 @@ using CSV
 using SparseArrays
 using Random, Statistics
 using Flux
+using Flux: @epochs
 include("graph_functions.jl")
 include("featurize.jl")
 include("layers.jl")
 
 # data-related options
-num_pts = 10 # how many points to use? Up to 32530
-train_frac = 0.2 # what fraction for training?
-num_train = Int32(round(train_frac) * num_pts)
+num_pts = 100 # how many points to use? Up to 32530
+train_frac = 0.8 # what fraction for training?
+num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
 datadir = "../MP_data/"
@@ -49,19 +50,20 @@ output = y[indices]
 # next, make graphs and build input features (matrices of dimension (# features, # nodes))
 graphs = SimpleWeightedGraph{Int32, Float32}[]
 element_lists = Array{String}[]
-inputs = Tuple{Array{Bool,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
+inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
     graph, el_list = build_graph(cifpath)
     push!(graphs, graph)
     push!(element_lists, el_list)
-    input = hcat([atom_feature_vecs[e] for e in el_list]...)
+    # casting to Float32 because can't chain multiple conv layers together with onehot...
+    input = hcat([Float32.(atom_feature_vecs[e]) for e in el_list]...)
     push!(inputs, (input, adjacency_matrix(graph)))
 end
 
 # pick out train/test sets
-train_output = y[1:num_train]
-test_output = y[num_train+1:end]
+train_output = output[1:num_train]
+test_output = output[num_train+1:end]
 train_input = inputs[1:num_train]
 test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
@@ -71,19 +73,24 @@ train_data = zip(train_input, train_output)
 # TODO: make pooling less janky:
 # * figure out pooling dimensionality thing... (for now just stuck those reshape/collapse layers in)
 # * collapsing nodal dimension by a straight-up average right now, maybe need a custom layer that does these in one step?
-#model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
+model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
 
 # a way more simple example
-model = Chain(CGCNConv(num_features=>num_features), x->x[1], x->reshape(x, (size(x)..., 1, 1)), x->mean(x))
+#model = Chain(CGCNConv(num_features=>num_features), x->x[1], x->reshape(x, (size(x)..., 1, 1)), x->mean(x))
 
 # this works fine
-@code_warntype model[4](model[3](model[2](model[1](inputs[1]))))
+#@code_warntype model[4](model[3](model[2](model[1](inputs[1]))))
 
 # but this gives an Any type...even though it should represent the same thing?
-@code_warntype model(inputs[1])
+#@code_warntype model(inputs[1])
 
 # define loss function
-#loss(x,y) = Flux.mse(model(x), y)
+loss(x,y) = Flux.mse(model(x), y)
+
+# and a callback to see training progress
+evalcb() = @show(mean(loss.(test_input, test_output)))
+evalcb()
 
 # train
 #Flux.train!(loss, params(model), train_data, opt)
+@epochs 5 Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))

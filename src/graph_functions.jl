@@ -50,8 +50,11 @@ Note that `max_num_nbr` is a "soft" max, in that if there are more of the same d
 - `radius::Float=8.0`: cutoff radius for atoms to be considered neighbors (in angstroms)
 - `max_num_nbr::Integer=12`: maximum number of neighbors to include (even if more fall within cutoff radius)
 - `dist_decay_func`: function (e.g. inverse_square or exp_decay) to determine falloff of graph edge weights with neighbor distance
+
+# TODO
+- option to cut off by nearest, next-nearest, etc. by DISTANCE rather than NUMBER of neighbors
 """
-function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square)
+function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square, normalize=true)
     c = s.Structure.from_file(cif_path)
     num_atoms = size(c)[1]
 
@@ -82,7 +85,7 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
         atom_nbs = all_nbrs[atom_ind]
         # iterate over each neighbor...
         for nb_num in 1:size(all_nbrs[atom_ind])[1]
-            nb = all_nbrs[atom_ind][nb_num]
+            nb = atom_nbs[nb_num]
             global nb_ind = site_index(nb)
             # if we're under the max, add it for sure
             if nb_num < max_num_nbr
@@ -105,7 +108,9 @@ function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inver
     weight_mat = 0.5.* (weight_mat .+ weight_mat')
 
     # normalize weights
-    weight_mat = weight_mat ./ maximum(weight_mat)
+    if normalize
+        weight_mat = weight_mat ./ maximum(weight_mat)
+    end
 
     # turn into a graph...
     g = SimpleWeightedGraph{Int32, Float32}(weight_mat)

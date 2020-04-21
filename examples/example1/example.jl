@@ -9,7 +9,9 @@ using SparseArrays
 using Random, Statistics
 using Flux
 using Flux: @epochs
+using GeometricFlux
 using CrystalGraphConvNets
+using SimpleWeightedGraphs
 
 println("Setting things up...")
 
@@ -51,16 +53,21 @@ output = y[indices]
 
 # next, make graphs and build input features (matrices of dimension (# features, # nodes))
 println("Building graphs and feature vectors from structures...")
-graphs = SimpleWeightedGraph{Int32, Float32}[]
+#graphs = SimpleWeightedGraph{Int32, Float32}[]
 element_lists = Array{String}[]
-inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
+#inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
+inputs = FeaturedGraph{SimpleWeightedGraph{Int32, Float32}, Array{Float32,2}}[]
+# TODO: figure out null pyobject issue with build_graph, unless it's just a Juno thing?
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    graph, el_list = build_graph(cifpath)
-    push!(graphs, graph)
-    push!(element_lists, el_list)
-    input = hcat([atom_feature_vecs[e] for e in el_list]...)
-    push!(inputs, (input, adjacency_matrix(graph)))
+    gr, els = build_graph(cifpath)
+    #push!(graphs, graph)
+    push!(element_lists, els)
+    #input = hcat([atom_feature_vecs[e] for e in el_list]...)
+    feature_mat = hcat([atom_feature_vecs[e] for e in els]...)
+    input = FeaturedGraph(gr, feature_mat)
+    #push!(inputs, (input, adjacency_matrix(graph)))
+    push!(inputs, input)
 end
 
 # pick out train/test sets
@@ -77,7 +84,8 @@ println("Building the network...")
 # TODO: make pooling less janky:
 # * figure out pooling dimensionality thing... (for now just stuck those reshape/collapse layers in)
 # * collapsing nodal dimension by a straight-up average right now, maybe need a custom layer that does these in one step?
-model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
+#model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
+model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->feature(x), x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
 
 # a way more simple example
 #model = Chain(CGCNConv(num_features=>num_features), x->x[1], x->reshape(x, (size(x)..., 1, 1)), x->mean(x))

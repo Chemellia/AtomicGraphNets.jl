@@ -2,6 +2,7 @@ using Flux
 using Flux: glorot_uniform, @functor
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
+using GeometricFlux
 
 struct CGCNConv{T,F}
     selfweight::Array{T,2}
@@ -40,7 +41,15 @@ end
 """
 (l::CGCNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
 
-# fixes from Dhairya...
+function (l::CGCNConv)(gr::FeaturedGraph{T,S}) where {T,S}
+    X = feature(gr)
+    A = graph(gr)
+    out_mat = l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))
+    FeaturedGraph(A, out_mat)
+end
+
+# fixes from Dhairya... (maybe don't need anymore?)
+
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
   SparseMatrixCSC{T,N}(arr), Δ -> (collect(Δ),)
 end

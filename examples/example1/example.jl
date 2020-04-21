@@ -10,8 +10,8 @@ using Random, Statistics
 using Flux
 using Flux: @epochs
 using GeometricFlux
-using CrystalGraphConvNets
 using SimpleWeightedGraphs
+using CrystalGraphConvNets
 
 println("Setting things up...")
 
@@ -34,12 +34,8 @@ atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?
-pool_dims = (7,3) # pooling kernel size along features, nodes
-pool_pad = (3,1)
-pool_stride = (2,1)
 crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
 num_hidden_layers = 1 # how many fully-connected layers after convolution and pooling?
-out_pool_features = Int64(floor((num_features+2*pool_pad[1]-pool_dims[1])/pool_stride[1] + 1))
 opt = ADAM(0.001) # optimizer
 
 # dataset...first, read in outputs
@@ -84,17 +80,9 @@ println("Building the network...")
 # TODO: make pooling less janky:
 # * figure out pooling dimensionality thing... (for now just stuck those reshape/collapse layers in)
 # * collapsing nodal dimension by a straight-up average right now, maybe need a custom layer that does these in one step?
-#model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->x[1], x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
-model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., x->feature(x), x->reshape(x, (size(x)..., 1, 1)), MeanPool(pool_dims, stride=pool_stride, pad=pool_pad), x->mean(x, dims=2)[:,:,1,1], Dense(out_pool_features, crys_fea_len, softplus), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
+model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1, softplus))
 
-# a way more simple example
-#model = Chain(CGCNConv(num_features=>num_features), x->x[1], x->reshape(x, (size(x)..., 1, 1)), x->mean(x))
-
-# this works fine
-#@code_warntype model[4](model[3](model[2](model[1](inputs[1]))))
-
-# but this gives an Any type...even though it should represent the same thing?
-#@code_warntype model(inputs[1])
+# TODO: MaxPool might make more sense
 
 # define loss function
 loss(x,y) = Flux.mse(model(x), y)

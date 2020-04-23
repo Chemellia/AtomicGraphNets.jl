@@ -122,7 +122,7 @@ struct CGCNMaxPool
     pool_width_frac::Float32
 end
 
-function (m::CGCNMeanPool)(fg::FeaturedGraph{})
+function (m::CGCNMaxPool)(fg::FeaturedGraph{})
       # compute what pad and stride need to be...
       x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))

@@ -56,7 +56,7 @@ inputs = FeaturedGraph{SimpleWeightedGraph{Int32, Float32}, Array{Float32,2}}[]
 # TODO: figure out null pyobject issue with build_graph
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    gr, els = build_graph(s, cifpath)
+    gr, els = build_graph(cifpath)
     #push!(graphs, graph)
     push!(element_lists, els)
     #input = hcat([atom_feature_vecs[e] for e in el_list]...)

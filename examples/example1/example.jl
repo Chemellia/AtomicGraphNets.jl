@@ -53,10 +53,10 @@ println("Building graphs and feature vectors from structures...")
 element_lists = Array{String}[]
 #inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
 inputs = FeaturedGraph{SimpleWeightedGraph{Int32, Float32}, Array{Float32,2}}[]
-# TODO: figure out null pyobject issue with build_graph, unless it's just a Juno thing?
+# TODO: figure out null pyobject issue with build_graph
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    gr, els = build_graph(cifpath)
+    gr, els = build_graph(s, cifpath)
     #push!(graphs, graph)
     push!(element_lists, els)
     #input = hcat([atom_feature_vecs[e] for e in el_list]...)

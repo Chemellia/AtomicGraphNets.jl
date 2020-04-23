@@ -6,9 +6,6 @@ using PyCall
 using GraphPlot, Colors
 using LightGraphs, SimpleWeightedGraphs # need LightGraphs for adjacency_matrix fcn
 
-# import pymatgen stuff (to read in CIF and find neighbors)
-global s = pyimport("pymatgen.core.structure")
-
 # a few fcns just for readability...
 
 "Return the index of a given site in the structure."
@@ -55,6 +52,7 @@ Note that `max_num_nbr` is a "soft" max, in that if there are more of the same d
 - option to cut off by nearest, next-nearest, etc. by DISTANCE rather than NUMBER of neighbors
 """
 function build_graph(cif_path; radius=8.0, max_num_nbr=12, dist_decay_func=inverse_square, normalize=true)
+    s = pyimport("pymatgen.core.structure")
     c = s.Structure.from_file(cif_path)
     num_atoms = size(c)[1]
 

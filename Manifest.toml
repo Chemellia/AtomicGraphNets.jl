@@ -236,8 +236,8 @@ uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 version = "3.2.0"
 
 [[GeometricFlux]]
-deps = ["CUDAapi", "CUDAnative", "CuArrays", "DataStructures", "FillArrays", "Flux", "IRTools", "LightGraphs", "LinearAlgebra", "Random", "Requires", "SparseArrays", "StaticArrays", "Statistics", "Zygote", "ZygoteRules"]
-git-tree-sha1 = "37679c9e4ee82b675b316724e5f08f6cc4c48374"
+deps = ["CUDAapi", "CUDAnative", "CuArrays", "DataStructures", "FillArrays", "Flux", "IRTools", "LightGraphs", "LinearAlgebra", "Random", "Requires", "SimpleWeightedGraphs", "SparseArrays", "StaticArrays", "Statistics", "Zygote", "ZygoteRules"]
+git-tree-sha1 = "d570a36a9044e42693167630ea70468aca987cd8"
 repo-rev = "master"
 repo-url = "https://github.com/rkurchin/GeometricFlux.jl.git"
 uuid = "7e08b658-56d3-11e9-2997-919d5b31e4ea"

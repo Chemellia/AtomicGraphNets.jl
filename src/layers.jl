@@ -3,6 +3,7 @@ using Flux: glorot_uniform, @functor
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using GeometricFlux
+using Statistics
 
 struct CGCNConv{T,F}
     selfweight::Array{T,2}

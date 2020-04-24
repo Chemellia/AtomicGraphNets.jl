@@ -40,7 +40,7 @@ nums_to_skip = [2, 10, 18, 36, 54]
 
 avail_features = ["Z", "group", "row", "block", "atomic_mass", "atomic_radius", "van_der_waals_radius", "X"]
 global categorical_features = ["group", "row", "block"]
-global categorical_feature_vals = Dict("group"=>1:18, "row"=>1:6, "block"=>["s", "p", "d", "f"])
+global categorical_feature_vals = Dict("group"=>1:18, "row"=>1:8, "block"=>["s", "p", "d", "f"])
 
 # compile data... (and skip noble gases)
 pt = pyimport("pymatgen.core.periodic_table")
@@ -72,6 +72,7 @@ for feature in avail_features
 end
 
 # relabel rows for lanthanoids (should be 6 not 8)
+#=
 rows = atom_data_df.row
 for i in 1:length(rows)
     if rows[i]==8.0
@@ -79,6 +80,7 @@ for i in 1:length(rows)
     end
 end
 atom_data_df.row = rows
+=#
 
 # compile some useful reference data...
 # min and max values of each feature...
@@ -210,7 +212,7 @@ function get_logspaced_vec(vec, num_features)
     elseif length(vec) < num_features
         println("logspaced vector too short. Padding end with falses.")
         logspaced_vec = hcat(vec, [false for i in 1:num_features-size(vec,1)])
-    elseif size(logspaced, 1) > num_features
+    elseif size(vec, 1) > num_features
         println("logspaced vector too long. Cutting off at appropriate length.")
         logspaced_vec = vec[1:num_features]
     end

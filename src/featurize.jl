@@ -23,67 +23,28 @@ Other decisions to make:
 
 NOTE: if we experiment with other featurizations that don't just contain 0's and 1's, normalized vs. non-normalized graph Laplacians will become important!
 =#
-using PyCall
-using PeriodicTable
+#using PyCall
+#using PeriodicTable
+using CSV
 using DataFrames
 using Flux:onehot, onecold
 
-global default_nbins = 10
-
-# we can probably skip radioactive stuff for now...
-max_atno = 83
-
-all_elements = [e.symbol for e in elements[1:max_atno]]
-
-# leave off noble gases too
-nums_to_skip = [2, 10, 18, 36, 54]
-
+# copied from get_atomic_data currently, bad form
 avail_features = ["Z", "group", "row", "block", "atomic_mass", "atomic_radius", "van_der_waals_radius", "X"]
 global categorical_features = ["group", "row", "block"]
 global categorical_feature_vals = Dict("group"=>1:18, "row"=>1:8, "block"=>["s", "p", "d", "f"])
 
-# compile data... (and skip noble gases)
-pt = pyimport("pymatgen.core.periodic_table")
-atom_data = [pt.Element(all_elements[i]) for i in 1:max_atno if !(i in nums_to_skip)]
-all_elements = [all_elements[i] for i in 1:max_atno if !(i in nums_to_skip)]
+# get data path and read in
+current_dir = pwd()
+this_dir = @__DIR__
+cd(this_dir)
+cd("../data")
+data_folder = pwd()
+cd(current_dir)
+data_path = joinpath(data_folder, "mp_atomic_data.csv")
+global atom_data_df = CSV.read(data_path)
 
-py"""
-def isnone(x):
-    return x is None
-"""
-
-# reformat into a DataFrame for niceness
-global atom_data_df = DataFrame(sym = all_elements)
-for feature in avail_features
-    if feature=="block"
-        feature_vals = ["a" for i in 1:length(all_elements)]
-    elseif feature in ["Z", "group", "row"]
-        feature_vals = missings(Int32, length(all_elements))
-    else
-        feature_vals = missings(Float32, length(all_elements))
-    end
-    for i in 1:length(all_elements)
-        feature_val = getproperty(atom_data[i], feature)
-        if !py"isnone"(feature_val)
-            feature_vals[i] = feature_val
-        end
-    end
-    global atom_data_df[!, Symbol(feature)] = feature_vals
-end
-
-# relabel rows for lanthanoids (should be 6 not 8)
-#=
-rows = atom_data_df.row
-for i in 1:length(rows)
-    if rows[i]==8.0
-        rows[i] = 6.0
-    end
-end
-atom_data_df.row = rows
-=#
-
-# compile some useful reference data...
-# min and max values of each feature...
+# compile min and max values of each feature...
 global fea_minmax = Dict()
 for feature in avail_features
     if !(feature in categorical_features)

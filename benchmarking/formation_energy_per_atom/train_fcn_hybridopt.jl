@@ -8,6 +8,7 @@ using SparseArrays
 using Random, Statistics
 using Flux
 using Flux: @epochs
+using Flux: Optimiser, ExpDecay
 using GeometricFlux
 using SimpleWeightedGraphs
 using CrystalGraphConvNets
@@ -87,7 +88,7 @@ function cgcnn_train(args)
     test_output = output[num_train+1:end]
     train_input = inputs[1:num_train]
     test_input = inputs[num_train+1:end]
-    train_data = zip(train_input, train_output)
+    train_data = [io for io in zip(train_input, train_output)]
 
     # build the network
     if pool_type=="mean"
@@ -108,13 +109,20 @@ function cgcnn_train(args)
     # train
     #opt = ADAM(lr)
     # trying out this, per Dhairya's suggestion
-    opt = Optimiser(ExpDecay(η = lr, decay = 0.1, decay_step = 1000, clip = 1e-4), ADAM())
-    _, train_time, mem, _, _ = @timed @epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb=Flux.throttle(evalcb, 5))
+    # hybrid: first 10k with no decay, then start decaying the LR
+    opt = Optimiser(ExpDecay(0.001, 0.15, 500), ADAMW())
+    if length(train_data)>8000
+        _, train_time_1, mem, _, _ = @timed @epochs num_epochs Flux.train!(loss, params(model), train_data[1:8000], opt[2], cb=Flux.throttle(evalcb, 5))
+        _, train_time_2, mem, _, _ = @timed @epochs num_epochs Flux.train!(loss, params(model), train_data[8001:end], opt, cb=Flux.throttle(evalcb, 5))
+    else
+        _, train_time_1, mem, _, _ = @timed @epochs num_epochs Flux.train!(loss, params(model), train_data, opt[2], cb=Flux.throttle(evalcb, 5))
+        train_time_2 = 0
+    end
 
     end_err = evalcb()
 
     loss_mae(x,y) = Flux.mae(model(x),y)
     end_mae = mean(loss_mae.(test_input, test_output))
 
-    start_err, end_err, end_mae, train_time
+    start_err, end_err, end_mae, train_time_1 + train_time_2
 end

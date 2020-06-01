@@ -27,7 +27,7 @@ id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
 features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
-num_bins = [18, 6, 4, 16, 10, 10]
+num_bins = [18, 8, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
 atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)

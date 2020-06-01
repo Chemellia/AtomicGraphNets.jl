@@ -239,7 +239,7 @@ version = "3.2.0"
 deps = ["CUDAapi", "CUDAnative", "CuArrays", "DataStructures", "FillArrays", "Flux", "IRTools", "LightGraphs", "LinearAlgebra", "Random", "Requires", "SimpleWeightedGraphs", "SparseArrays", "StaticArrays", "Statistics", "Zygote", "ZygoteRules"]
 git-tree-sha1 = "d570a36a9044e42693167630ea70468aca987cd8"
 repo-rev = "master"
-repo-url = "https://github.com/rkurchin/GeometricFlux.jl.git"
+repo-url = "https://github.com/aced-differentiate/GeometricFlux.jl.git"
 uuid = "7e08b658-56d3-11e9-2997-919d5b31e4ea"
 version = "0.5.0"
 

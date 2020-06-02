@@ -1,5 +1,5 @@
 using Flux
-using Flux: glorot_uniform, @functor
+using Flux: glorot_uniform, @functor, normalise
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using GeometricFlux
@@ -38,14 +38,15 @@ end
  Define action of layer on inputs: do a graph convolution, add this (weighted by convolutional weight) to the features themselves (weighted by self weight) and the per-feature bias (concatenated to match number of nodes in graph).
 
 # Arguments
-- input: tuple of input data (stored in (# features, # nodes) order) and adjacency matrix of the graph
+- input: FeaturedGraph with  input data (stored in (# features, # nodes) order) and adjacency matrix of the graph
 """
 (l::CGCNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
 
 function (l::CGCNConv)(gr::FeaturedGraph{T,S}) where {T,S}
     X = feature(gr)
     A = graph(gr)
-    out_mat = l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))
+    #out_mat = l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))
+    out_mat = normalise(l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
     FeaturedGraph(A, out_mat)
 end
 

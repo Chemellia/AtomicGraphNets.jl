@@ -124,7 +124,6 @@ end
 
 function (m::AGNMeanPool)(fg::FeaturedGraph{})
       # compute what pad and stride need to be...
-      x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))
       num_features, num_nodes = size(x)
       dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
@@ -134,6 +133,8 @@ function (m::AGNMeanPool)(fg::FeaturedGraph{})
       mean(Flux.meanpool(x, pdims), dims=2)[:,:,1,1]
 end
 
+(m::CGCNMeanPool)(fg::FeaturedGraph{}) = m(feature(fg))
+
 """Like above, but for max pooling"""
 struct AGNMaxPool
     out_num_features::Int64
@@ -142,7 +143,6 @@ end
 
 function (m::AGNMaxPool)(fg::FeaturedGraph{})
       # compute what pad and stride need to be...
-      x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))
       num_features, num_nodes = size(x)
       dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
@@ -151,3 +151,5 @@ function (m::AGNMaxPool)(fg::FeaturedGraph{})
       pdims = PoolDims(x, (dim,1); padding=(pad,0), stride=(str,1))
       mean(Flux.maxpool(x, pdims), dims=2)[:,:,1,1]
 end
+
+(m::CGCNMaxPool)(fg::FeaturedGraph{}) = m(feature(fg))

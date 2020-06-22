@@ -1,5 +1,5 @@
 #=
- Train a simple network to predict formation energy per atom (downloaded from Materials Project).
+Basically the same as the first example, but trying the DEQ approach using SteadyStateProblem.
 =#
 using Pkg
 Pkg.activate("../../")
@@ -12,8 +12,7 @@ using Flux: @epochs
 using GeometricFlux
 using SimpleWeightedGraphs
 using CrystalGraphConvNets
-
-println("Setting things up...")
+using DifferentialEquations:SteadyStateProblem
 
 # data-related options
 num_pts = 100 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
@@ -33,7 +32,6 @@ logspaced = [false, false, false, true, true, false]
 atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
-num_conv = 3 # how many convolutional layers?
 crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
 num_hidden_layers = 1 # how many fully-connected layers after convolution and pooling?
 opt = ADAM(0.001) # optimizer
@@ -74,20 +72,6 @@ train_input = inputs[1:num_train]
 test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
 
-# build the network (basically just copied from CGCNN.py for now): the convolutional layers, a mean pooling function, some dense layers, then fully connected output to one value for prediction
-
-println("Building the network...")
-model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
-
-# TODO: MaxPool might make more sense
-
-# define loss function
-loss(x,y) = Flux.mse(model(x), y)
-# and a callback to see training progress
-evalcb() = @show(mean(loss.(test_input, test_output)))
-evalcb()
-
-# train
-println("Training!")
-#Flux.train!(loss, params(model), train_data, opt)
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
+# set up SteadyStateProblem where the derivative is the convolution operation
+# (we want the "fixed point" of the convolution)
+# need it in the form f(u,p,t) where t doesn't matter

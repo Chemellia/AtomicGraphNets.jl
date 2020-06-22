@@ -1,6 +1,6 @@
-# Example 1
+# Examples
 
-In this example, we will create and train a network based on the architecture from [this paper](https://arxiv.org/abs/1710.10324). Step-by-step instructions to run it are provided below.
+This directory has a few examples which use the same dataset of formation energy per atom from Materials Project. This README gives instructions for getting your environment set up to run the examples.
 
 ## 1. Create the dataset
 
@@ -16,6 +16,8 @@ conda activate example1
 ```
 Alternatively, to install dependencies in an existing environment, replace `create` above with `install` and omit the second line.
 
+NB: If you're on a Windows machine, your mileage may vary...I still need to make better instructions for that case.
+
 ### b) Download the data
 If you want to train a different property than formation energy per atom, replace it with its pymatgen string in that line.
 
@@ -26,9 +28,9 @@ python download_data.py "your_api_key"
 where `"your_api_key"` is replaced with your actual key.
 
 # 2. Train the network!
-If you changed the property to train, make sure to update `example.jl` to reflect that (the line under "data-related options" reading `prop = "formation_energy_per_atom"`).
+If you changed the property to train, make sure to update the file to reflect that (in the first example, this would be the line under "data-related options" reading `prop = "formation_energy_per_atom"`).
 
-Otherwise, you should be able to simply run the `example.jl` file in your Julia environment and see what happens!
+Otherwise, you should be able to simply run the the files in your Julia environment and see what happens!
 
 (Note that you may get some CIF parsing warnings from pymatgen, but these shouldn't affect things and can be safely ignored)
 

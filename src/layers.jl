@@ -105,9 +105,8 @@ function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float3
     dim, str, pad
 end
 
-function (m::CGCNMeanPool)(fg::FeaturedGraph{})
+function (m::CGCNMeanPool)(x::Array{Float32,2})
       # compute what pad and stride need to be...
-      x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))
       num_features, num_nodes = size(x)
       dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
@@ -117,15 +116,16 @@ function (m::CGCNMeanPool)(fg::FeaturedGraph{})
       mean(Flux.meanpool(x, pdims), dims=2)[:,:,1,1]
 end
 
+(m::CGCNMeanPool)(fg::FeaturedGraph{}) = m(feature(fg))
+
 """Like above, but for max pooling"""
 struct CGCNMaxPool
     out_num_features::Int64
     pool_width_frac::Float32
 end
 
-function (m::CGCNMaxPool)(fg::FeaturedGraph{})
+function (m::CGCNMaxPool)(x::Array{Float32,2})
       # compute what pad and stride need to be...
-      x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))
       num_features, num_nodes = size(x)
       dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
@@ -134,3 +134,5 @@ function (m::CGCNMaxPool)(fg::FeaturedGraph{})
       pdims = PoolDims(x, (dim,1); padding=(pad,0), stride=(str,1))
       mean(Flux.maxpool(x, pdims), dims=2)[:,:,1,1]
 end
+
+(m::CGCNMaxPool)(fg::FeaturedGraph{}) = m(feature(fg))

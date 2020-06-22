@@ -3,7 +3,7 @@
  Based on architecture from this paper: https://arxiv.org/abs/1710.10324
 =#
 using Pkg
-Pkg.activate("../../")
+Pkg.activate("../")
 using GraphPlot, Colors
 using CSV
 using SparseArrays
@@ -23,7 +23,7 @@ num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
-datadir = "../../data/"
+datadir = "../data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now

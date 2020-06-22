@@ -2,7 +2,7 @@
 Basically the same as the first example, but trying the DEQ approach using SteadyStateProblem.
 =#
 using Pkg
-Pkg.activate("../../")
+Pkg.activate("../")
 using GraphPlot, Colors
 using CSV
 using SparseArrays
@@ -12,7 +12,7 @@ using Flux: @epochs
 using GeometricFlux
 using SimpleWeightedGraphs
 using CrystalGraphConvNets
-using DifferentialEquations:SteadyStateProblem
+using DifferentialEquations, DiffEqSensitivity
 
 # data-related options
 num_pts = 100 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
@@ -21,7 +21,7 @@ num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
-datadir = "../../data/"
+datadir = "../data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
@@ -74,4 +74,34 @@ train_data = zip(train_input, train_output)
 
 # set up SteadyStateProblem where the derivative is the convolution operation
 # (we want the "fixed point" of the convolution)
-# need it in the form f(u,p,t) where t doesn't matter
+# need it in the form f(u,p,t) (but t doesn't matter)
+# u is the features, p is [graph, conv layer]
+f = function (dfeat,feat,p,t)
+    gr = p[1]
+    input = FeaturedGraph(gr,feat)
+    conv = p[2]
+    output = conv(input)
+    dfeat = feature(output) .- feature(input)
+end
+
+function deq(input::FeaturedGraph{SimpleWeightedGraph{Int32,Float32},Array{Float32,2}}, n=num_features)
+    convlayer = CGCNConv(n=>n) # this should probably be part of the input
+    gr = graph(input)
+    feat = feature(input)
+    p = [gr, convlayer]
+    guess = feature(convlayer(input))
+    prob = SteadyStateProblem{true}(f, guess, p)
+    return solve(prob, DynamicSS(Tsit5())).u
+end
+
+model = Chain(deq, CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+
+loss(x,y) = Flux.mse(model(x), y)
+# and a callback to see training progress
+evalcb() = @show(mean(loss.(test_input, test_output)))
+evalcb()
+
+# train
+println("Training!")
+#Flux.train!(loss, params(model), train_data, opt)
+@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))

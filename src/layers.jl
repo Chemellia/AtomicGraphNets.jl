@@ -4,6 +4,7 @@ using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using GeometricFlux
 using Statistics
+using DifferentialEquations, DiffEqSensitivity
 
 struct CGCNConv{T,F}
     selfweight::Array{T,2}
@@ -136,3 +137,35 @@ function (m::CGCNMaxPool)(x::Array{Float32,2})
 end
 
 (m::CGCNMaxPool)(fg::FeaturedGraph{}) = m(feature(fg))
+
+# DEQ-style model where we treat the convolution as a SteadyStateProblem
+struct CGCNConvDEQ{T,F}
+    conv::CGCNConv{T,F}
+end
+
+function CGCNConvDEQ(ch::Pair{<:Integer,<:Integer}, σ=softplus; init=glorot_uniform, T::DataType=Float32, bias::Bool=true)
+    conv = CGCNConv(ch, σ; init=init, T=T, bias=bias)
+    CGCNConvDEQ(conv)
+end
+
+@functor CGCNConvDEQ
+
+# set up SteadyStateProblem where the derivative is the convolution operation
+# (we want the "fixed point" of the convolution)
+# need it in the form f(u,p,t) (but t doesn't matter)
+# u is the features, p is [graph, conv layer]
+f = function (dfeat,feat,p,t)
+    gr = p[1]
+    input = FeaturedGraph(gr,feat)
+    conv = p[2]
+    output = conv(input)
+    dfeat = feature(output) .- feature(input)
+end
+
+function (l::CGCNConvDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
+    p = [graph(gr), l.conv]
+    # do one convolution to get initial guess
+    guess = feature(l.conv(gr))
+    prob = SteadyStateProblem{true}(f, guess, p)
+    return solve(prob, DynamicSS(Tsit5())).u
+end

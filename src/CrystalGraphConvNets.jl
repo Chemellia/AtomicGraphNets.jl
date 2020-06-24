@@ -9,7 +9,7 @@ include("graph_functions.jl")
 export atom_data_df, make_feature_vectors, decode_feature_vector
 include("featurize.jl")
 
-export CGCNConv, CGCNMeanPool, CGCNMaxPool
+export CGCNConv, CGCNConvDEQ, CGCNMeanPool, CGCNMaxPool
 include("layers.jl")
 
 end

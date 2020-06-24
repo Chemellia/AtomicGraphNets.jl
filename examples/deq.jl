@@ -12,7 +12,6 @@ using Flux: @epochs
 using GeometricFlux
 using SimpleWeightedGraphs
 using CrystalGraphConvNets
-using DifferentialEquations, DiffEqSensitivity
 
 # data-related options
 num_pts = 100 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
@@ -72,34 +71,15 @@ train_input = inputs[1:num_train]
 test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
 
-# set up SteadyStateProblem where the derivative is the convolution operation
-# (we want the "fixed point" of the convolution)
-# need it in the form f(u,p,t) (but t doesn't matter)
-# u is the features, p is [graph, conv layer]
-f = function (dfeat,feat,p,t)
-    gr = p[1]
-    input = FeaturedGraph(gr,feat)
-    conv = p[2]
-    output = conv(input)
-    dfeat = feature(output) .- feature(input)
-end
-
-function deq(input::FeaturedGraph{SimpleWeightedGraph{Int32,Float32},Array{Float32,2}}, n=num_features)
-    convlayer = CGCNConv(n=>n) # this should probably be part of the input
-    gr = graph(input)
-    feat = feature(input)
-    p = [gr, convlayer]
-    guess = feature(convlayer(input))
-    prob = SteadyStateProblem{true}(f, guess, p)
-    return solve(prob, DynamicSS(Tsit5())).u
-end
-
-model = Chain(deq, CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+# moved DEQ to its own layer definition
+model = Chain(CGCNConvDEQ(num_features=>num_features), CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
 
 loss(x,y) = Flux.mse(model(x), y)
 # and a callback to see training progress
 evalcb() = @show(mean(loss.(test_input, test_output)))
 evalcb()
+
+# TODO: troubleshoot training (type inference)
 
 # train
 println("Training!")

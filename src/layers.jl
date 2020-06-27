@@ -170,19 +170,19 @@ end
 # set up SteadyStateProblem where the derivative is the convolution operation
 # (we want the "fixed point" of the convolution)
 # need it in the form f(u,p,t) (but t doesn't matter)
-# u is the features, p is [graph, conv layer]
-f = function (dfeat,feat,p,t)
-    gr = p[1]
-    input = FeaturedGraph(gr,feat)
-    conv = p[2]
-    output = conv(input)
-    dfeat = feature(output) .- feature(input)
-end
-
+# u is the features, p is the parameters of conv
+# re(p) reconstructs the convolution with new parameters p
 function (l::CGCNConvDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
-    p = [graph(gr), l.conv]
+    p,re = destructure(l.conv)
     # do one convolution to get initial guess
     guess = feature(l.conv(gr))
+    
+    f = function (dfeat,feat,p,t)
+        input = FeaturedGraph(gr,feat)
+        output = re(p)(input)
+        dfeat .= feature(output) .- feature(input)
+    end
+    
     prob = SteadyStateProblem{true}(f, guess, p)
     return solve(prob, DynamicSS(Tsit5())).u
 end

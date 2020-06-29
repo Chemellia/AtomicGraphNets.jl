@@ -39,6 +39,8 @@ function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_unifor
     convweight = T.(initW(ch[2], ch[1]))
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
+    CGCNConv(selfweight, convweight, b, σ)
+>>>>>>> make CGCNConv arrays abstract, change to Zygote
 end
 
 @functor AGNConv
@@ -177,5 +179,5 @@ function (l::CGCNConvDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
 
     prob = SteadyStateProblem{true}(f, guess, p)
     #return solve(prob, DynamicSS(Tsit5())).u
-    return reshape(solve(prob, SSRootfind()).u, size(guess))
+    return reshape(solve(prob, SSRootfind(), sensealg = SteadyStateAdjoint(autojacvec = ZygoteVJP())).u, size(guess))
 end

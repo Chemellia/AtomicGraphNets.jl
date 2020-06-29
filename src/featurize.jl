@@ -42,7 +42,7 @@ cd("../data")
 data_folder = pwd()
 cd(current_dir)
 data_path = joinpath(data_folder, "mp_atomic_data.csv")
-global atom_data_df = CSV.read(data_path)
+global atom_data_df = DataFrame!(CSV.File(data_path))
 
 # compile min and max values of each feature...
 global fea_minmax = Dict()

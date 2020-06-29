@@ -1,5 +1,5 @@
 using Flux
-using Flux: glorot_uniform, @functor
+using Flux: glorot_uniform, @functor, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using GeometricFlux
@@ -176,13 +176,14 @@ function (l::CGCNConvDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
     p,re = destructure(l.conv)
     # do one convolution to get initial guess
     guess = feature(l.conv(gr))
-    
+
     f = function (dfeat,feat,p,t)
         input = FeaturedGraph(gr,feat)
         output = re(p)(input)
         dfeat .= feature(output) .- feature(input)
     end
-    
+
     prob = SteadyStateProblem{true}(f, guess, p)
-    return solve(prob, DynamicSS(Tsit5())).u
+    #return solve(prob, DynamicSS(Tsit5())).u
+    return reshape(solve(prob, SSRootfind()).u, size(guess))
 end

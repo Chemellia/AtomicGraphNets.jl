@@ -6,3 +6,4 @@ data/formation_energy_per_atom_graphs/
 data/*/*.cif
 data/*/*.txt
 *#
+.vscode/*

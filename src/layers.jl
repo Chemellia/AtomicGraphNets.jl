@@ -69,6 +69,11 @@ end
 end
 @nograd issymmetric
 
+@adjoint function softplus(x::Real)
+  y = softplus(x)
+  return y, Δ -> (Δ * σ(x),)
+end
+
 """
 Custom mean pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux MeanPool.
 

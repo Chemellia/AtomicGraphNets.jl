@@ -1,6 +1,6 @@
 using CrystalGraphConvNets
 using Test
 
-@testset "CrystalGraphConvNets.jl" begin
-    # Write your own tests here.
+@testset "layer_tests" begin
+    include("layer_tests.jl")
 end

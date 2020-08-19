@@ -4,19 +4,21 @@ using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using GeometricFlux
 using Statistics
-
-struct CGCNConv{T,F}
-    selfweight::Array{T,2}
-    convweight::Array{T,2}
-    bias::Array{T,2}
-    σ::F
-end
+using SimpleWeightedGraphs
 
 # regularized norm fcn, cut out the dims part
 function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     μ′ = mean(x)
     σ′ = std(x, mean = μ′, corrected=false)
     return (x .- μ′) ./ (σ′ + ϵ)
+end
+
+
+struct CGCNConv{T,F}
+    selfweight::Array{T,2}
+    convweight::Array{T,2}
+    bias::Array{T,2}
+    σ::F
 end
 
 """
@@ -31,10 +33,10 @@ Crystal graph convolutional layer. Almost identical to GCNConv from GeometricFlu
 - `σ::F=softplus`: activation function
 - `bias::Bool=true`: keyword argument, whether to learn the additive bias.
 """
-function CGCNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; init=glorot_uniform, T::DataType=Float32, bias::Bool=true)
-    selfweight = init(ch[2], ch[1])
-    convweight = init(ch[2], ch[1])
-    b = bias ? init(ch[2], 1) : zeros(T, ch[2], 1)
+function CGCNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
+    selfweight = initW(ch[2], ch[1])
+    convweight = initW(ch[2], ch[1])
+    b = initb(ch[2], 1)
     CGCNConv(selfweight, convweight, b, σ)
 end
 
@@ -52,11 +54,12 @@ end
 function (l::CGCNConv)(gr::FeaturedGraph{T,S}) where {T,S}
     X = feature(gr)
     A = graph(gr)
-    #out_mat = l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))
-    #out_mat = normalise(l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
-    out_mat = reg_norm(l.σ.(l.convweight * X * normalized_laplacian(A, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
+    out_mat = reg_norm(l.σ.(l.convweight * X * normalized_laplacian(A.weights, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
     FeaturedGraph(A, out_mat)
 end
+
+# alternate input format: adjacency matrix and feature matrix
+(l::CGCNConv)(adjmat::AbstractMatrix{<:AbstractFloat}, fea::AbstractMatrix{<:AbstractFloat}) = l(FeaturedGraph(SimpleWeightedGraph(adjmat), fea))
 
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}

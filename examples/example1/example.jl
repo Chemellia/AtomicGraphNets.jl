@@ -3,15 +3,16 @@
 =#
 using Pkg
 Pkg.activate("../../")
-using GraphPlot, Colors
+#using GraphPlot, Colors
 using CSV
 using SparseArrays
 using Random, Statistics
 using Flux
 using Flux: @epochs
-using GeometricFlux
+using GeometricFlux: FeaturedGraph
 using SimpleWeightedGraphs
 using CrystalGraphConvNets
+using ChemistryFeaturization
 
 println("Setting things up...")
 
@@ -26,8 +27,8 @@ datadir = "../../data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
-features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
-num_bins = [18, 8, 4, 16, 10, 10]
+features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
+num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
 atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
@@ -61,7 +62,7 @@ for r in eachrow(info)
     push!(element_lists, els)
     #input = hcat([atom_feature_vecs[e] for e in el_list]...)
     feature_mat = hcat([atom_feature_vecs[e] for e in els]...)
-    input = FeaturedGraph(gr, feature_mat)
+    input = FeaturedGraph(SimpleWeightedGraph{Int32}(Float32.(gr)), feature_mat)
     #push!(inputs, (input, adjacency_matrix(graph)))
     push!(inputs, input)
 end

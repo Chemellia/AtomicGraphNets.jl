@@ -1,4 +1,4 @@
-using CrystalGraphConvNets
+using AtomicGraphNets
 using Test
 
 @testset "layer_tests" begin

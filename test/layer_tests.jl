@@ -2,12 +2,12 @@ using Test
 
 include("../src/layers.jl")
 
-@testset "CGCNConv" begin
+@testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones
     adjmat = Float32.([0 1 0; 1 0 1; 0 1 0])
     fg = FeaturedGraph(SimpleWeightedGraph(adjmat), ones(4,3))
     # create a conv layer, initialize weights with ones
-    l = CGCNConv(4=>4, initW=ones)
+    l = AGNConv(4=>4, initW=ones)
 
     # test that two function signatures give same result
     @test feature(l(fg)) == feature(l(graph(fg).weights, feature(fg)))
@@ -20,10 +20,10 @@ include("../src/layers.jl")
     # and now for a loop
     adjmat = Float32.([0 1 1; 1 0 1; 1 1 0])
     fg = FeaturedGraph(SimpleWeightedGraph(adjmat), ones(4,3))
-    l = CGCNConv(4=>4, initW=ones)
+    l = AGNConv(4=>4, initW=ones)
 
     @test feature(l(fg)) == feature(l(graph(fg).weights, feature(fg)))
-    @test CrystalGraphConvNets.reg_norm(softplus(4.0) .* ones(4,3)) == feature(l(fg))
+    @test AtomicGraphNets.reg_norm(softplus(4.0) .* ones(4,3)) == feature(l(fg))
 end
 
 @testset "pooling" begin
@@ -33,8 +33,8 @@ end
     fg = FeaturedGraph(SimpleWeightedGraph(adjmat), feat)
 
     # make some pooling layers
-    meanpool = CGCNMeanPool(10, 0.1)
-    maxpool = CGCNMaxPool(10, 0.1)
+    meanpool = AGNMeanPool(10, 0.1)
+    maxpool = AGNMaxPool(10, 0.1)
 
     # start with the easy stuff
     @test meanpool(fg) == ones(10,1)

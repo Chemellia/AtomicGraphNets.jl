@@ -11,7 +11,7 @@ using Flux
 using Flux: @epochs
 using GeometricFlux: FeaturedGraph
 using SimpleWeightedGraphs
-using CrystalGraphConvNets
+using AtomicGraphNets
 using ChemistryFeaturization
 
 println("Setting things up...")
@@ -78,7 +78,7 @@ train_data = zip(train_input, train_output)
 # build the network (basically just copied from CGCNN.py for now): the convolutional layers, a mean pooling function, some dense layers, then fully connected output to one value for prediction
 
 println("Building the network...")
-model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
 
 # TODO: MaxPool might make more sense
 

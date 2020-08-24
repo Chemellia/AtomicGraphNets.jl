@@ -14,7 +14,7 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
 end
 
 
-struct CGCNConv{T,F}
+struct AGNConv{T,F}
     selfweight::Array{T,2}
     convweight::Array{T,2}
     bias::Array{T,2}
@@ -22,10 +22,10 @@ struct CGCNConv{T,F}
 end
 
 """
-    CGCNConv(in=>out)
-    CGCNConv(in=>out, σ)
+    AGNConv(in=>out)
+    AGNConv(in=>out, σ)
 
-Crystal graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original CGCNN structure, so explicitly has self and convolutional weights separately. Default activation function is softplus.
+Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original AGNN structure, so explicitly has self and convolutional weights separately. Default activation function is softplus.
 
 # Arguments
 - `in::Integer`: the dimension of input features.
@@ -33,14 +33,14 @@ Crystal graph convolutional layer. Almost identical to GCNConv from GeometricFlu
 - `σ::F=softplus`: activation function
 - `bias::Bool=true`: keyword argument, whether to learn the additive bias.
 """
-function CGCNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
+function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
     selfweight = initW(ch[2], ch[1])
     convweight = initW(ch[2], ch[1])
     b = initb(ch[2], 1)
-    CGCNConv(selfweight, convweight, b, σ)
+    AGNConv(selfweight, convweight, b, σ)
 end
 
-@functor CGCNConv
+@functor AGNConv
 
 # TODO here: in the case of chaining multiple of these layers together, should make a way to pass laplacian through so it doesn't have to get computed each time (maybe some kind of flag to specify which is being given?)
 """
@@ -49,9 +49,9 @@ end
 # Arguments
 - input: FeaturedGraph with  input data (stored in (# features, # nodes) order) and adjacency matrix of the graph
 """
-#(l::CGCNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
+#(l::AGNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
 
-function (l::CGCNConv)(gr::FeaturedGraph{T,S}) where {T,S}
+function (l::AGNConv)(gr::FeaturedGraph{T,S}) where {T,S}
     X = feature(gr)
     A = graph(gr)
     out_mat = reg_norm(l.σ.(l.convweight * X * normalized_laplacian(A.weights, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
@@ -59,7 +59,7 @@ function (l::CGCNConv)(gr::FeaturedGraph{T,S}) where {T,S}
 end
 
 # alternate input format: adjacency matrix and feature matrix
-(l::CGCNConv)(adjmat::AbstractMatrix{<:AbstractFloat}, fea::AbstractMatrix{<:AbstractFloat}) = l(FeaturedGraph(SimpleWeightedGraph(adjmat), fea))
+(l::AGNConv)(adjmat::AbstractMatrix{<:AbstractFloat}, fea::AbstractMatrix{<:AbstractFloat}) = l(FeaturedGraph(SimpleWeightedGraph(adjmat), fea))
 
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
@@ -82,7 +82,7 @@ Custom mean pooling layer that outputs a fixed-length feature vector irrespectiv
 
 It accepts a pooling width and will adjust stride and/or padding such that the output vector length is correct.
 """
-struct CGCNMeanPool
+struct AGNMeanPool
     out_num_features::Int64
     pool_width_frac::Float32
 end
@@ -122,7 +122,7 @@ function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float3
     dim, str, pad
 end
 
-function (m::CGCNMeanPool)(fg::FeaturedGraph{})
+function (m::AGNMeanPool)(fg::FeaturedGraph{})
       # compute what pad and stride need to be...
       x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))
@@ -135,12 +135,12 @@ function (m::CGCNMeanPool)(fg::FeaturedGraph{})
 end
 
 """Like above, but for max pooling"""
-struct CGCNMaxPool
+struct AGNMaxPool
     out_num_features::Int64
     pool_width_frac::Float32
 end
 
-function (m::CGCNMaxPool)(fg::FeaturedGraph{})
+function (m::AGNMaxPool)(fg::FeaturedGraph{})
       # compute what pad and stride need to be...
       x = feature(fg)
       x = reshape(x, (size(x)..., 1, 1))

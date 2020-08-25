@@ -1,8 +1,5 @@
-#=
- Initial hyperparameter optimization for comparison of CrystalGraphConvNets.jl to CGCNN.py.
-=#
 using Pkg
-Pkg.activate("/home/rkurchin/CrystalGraphConvNets.jl/")
+Pkg.activate("/home/rkurchin/AtomicGraphNets.jl/")
 using CSV
 using SparseArrays
 using Random, Statistics
@@ -10,12 +7,12 @@ using Flux
 using Flux: @epochs
 using GeometricFlux
 using SimpleWeightedGraphs
-using CrystalGraphConvNets
+using AtomicGraphNets
 using DelimitedFiles
 using Distributed
 
 """
-Playing with hyperparameters for CGCNN to predict formation energies.
+Playing with hyperparameters for AGN to predict formation energies.
 
 Arguments:
     `num_pts::Integer`: how many structures to train on (up to 32530 currently)
@@ -91,9 +88,9 @@ function cgcnn_train(args)
 
     # build the network
     if pool_type=="mean"
-        model = Chain(CGCNConv(num_features=>atom_fea_len), [CGCNConv(atom_fea_len=>atom_fea_len) for i in 1:num_conv-1]..., CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
+        model = Chain(AGNConv(num_features=>atom_fea_len), [AGNConv(atom_fea_len=>atom_fea_len) for i in 1:num_conv-1]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
     elseif pool_type=="max"
-        model = Chain([CGCNConv(num_features=>num_features) for i in 1:num_conv]..., CGCNMaxPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
+        model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMaxPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
     else
         println("invalid pool type")
     end

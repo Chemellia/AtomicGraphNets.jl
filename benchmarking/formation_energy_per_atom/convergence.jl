@@ -1,5 +1,5 @@
 #=
- Initial hyperparameter optimization for comparison of CrystalGraphConvNets.jl to CGCNN.py.
+ Convergence checks.
 =#
 
 using Distributed

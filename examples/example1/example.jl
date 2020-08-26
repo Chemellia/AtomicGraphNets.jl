@@ -1,8 +1,8 @@
 #=
  Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
-using Pkg
-Pkg.activate("../../")
+#using Pkg
+#Pkg.activate("../../")
 #using GraphPlot, Colors
 using CSV
 using SparseArrays
@@ -23,7 +23,7 @@ num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
-datadir = "../../data/"
+datadir = "../../../MP_data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
@@ -78,7 +78,8 @@ train_data = zip(train_input, train_output)
 # build the network (basically just copied from CGCNN.py for now): the convolutional layers, a mean pooling function, some dense layers, then fully connected output to one value for prediction
 
 println("Building the network...")
-model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+#model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1))
+model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, num_hidden_layers=1)
 
 # TODO: MaxPool might make more sense
 

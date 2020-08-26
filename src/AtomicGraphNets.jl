@@ -6,4 +6,7 @@ import Flux:@functor
 export AGNConv, AGNMeanPool, AGNMaxPool
 include("layers.jl")
 
+export Xie_model
+include("models.jl")
+
 end

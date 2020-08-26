@@ -90,7 +90,7 @@ function cgcnn_train(args)
     if pool_type=="mean"
         model = Chain(AGNConv(num_features=>atom_fea_len), [AGNConv(atom_fea_len=>atom_fea_len) for i in 1:num_conv-1]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
     elseif pool_type=="max"
-        model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMaxPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
+        model = Chain(AGNConv(num_features=>atom_fea_len), [AGNConv(atom_fea_len=>atom_fea_len) for i in 1:num_conv-1]..., AGNMaxPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers-1]..., Dense(crys_fea_len, 1))
     else
         println("invalid pool type")
     end

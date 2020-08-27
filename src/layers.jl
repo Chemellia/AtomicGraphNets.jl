@@ -34,9 +34,9 @@ Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux
 - `bias::Bool=true`: keyword argument, whether to learn the additive bias.
 """
 function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
-    selfweight = initW(ch[2], ch[1])
-    convweight = initW(ch[2], ch[1])
-    b = initb(ch[2], 1)
+    selfweight = T.(initW(ch[2], ch[1]))
+    convweight = T.(initW(ch[2], ch[1]))
+    b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
 end
 

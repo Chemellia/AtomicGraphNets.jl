@@ -75,7 +75,7 @@ uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 version = "0.8.1"
 
 [[ChemistryFeaturization]]
-deps = ["CSV", "Colors", "DataFrames", "DataStructures", "Flux", "GraphPlot", "JSON", "PyCall"]
+deps = ["CSV", "Colors", "Conda", "DataFrames", "DataStructures", "Flux", "GraphPlot", "JSON", "PyCall"]
 path = "../ChemistryFeaturization.jl"
 uuid = "6c925690-434a-421d-aea7-51398c5b007a"
 version = "0.1.0"

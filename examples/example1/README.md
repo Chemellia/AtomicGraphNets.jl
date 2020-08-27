@@ -25,6 +25,9 @@ python download_data.py "your_api_key"
 ```
 where `"your_api_key"` is replaced with your actual key.
 
+### c) Update the paths
+In  `example.jl`, update the `datadir` specified in the second block of the file to point to the folder where you downloaded the CIFs.
+
 # 2. Train the network!
 If you changed the property to train, make sure to update `example.jl` to reflect that (the line under "data-related options" reading `prop = "formation_energy_per_atom"`).
 

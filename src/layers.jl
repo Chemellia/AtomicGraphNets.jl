@@ -47,20 +47,17 @@ end
  Define action of layer on inputs: do a graph convolution, add this (weighted by convolutional weight) to the features themselves (weighted by self weight) and the per-feature bias (concatenated to match number of nodes in graph).
 
 # Arguments
-- input: FeaturedGraph with  input data (stored in (# features, # nodes) order) and adjacency matrix of the graph
+- input: AtomGraph object
 """
-#(l::AGNConv)(input::Tuple{Array{Float32,2},SparseMatrixCSC{Float32,Int64}}) = l.σ.(l.convweight * input[1] * normalized_laplacian(input[2], Float32) + l.selfweight * input[1] + hcat([l.bias for i in 1:size(input[2], 1)]...)), input[2]
 
-function (l::AGNConv)(gr::FeaturedGraph{T,S}) where {T,S}
-    X = feature(gr)
-    A = graph(gr)
-    out_mat = reg_norm(l.σ.(l.convweight * X * normalized_laplacian(A.weights, Float32) + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
-    FeaturedGraph(A, out_mat)
+function (l::AGNConv)(ag::FeaturedGraph{T}) where T
+    lapl = ag.lapl
+    X = ag.features
+    out_mat = reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
+    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, ag.featurization)
 end
 
-# alternate input format: adjacency matrix and feature matrix
-(l::AGNConv)(adjmat::AbstractMatrix{<:AbstractFloat}, fea::AbstractMatrix{<:AbstractFloat}) = l(FeaturedGraph(SimpleWeightedGraph(adjmat), fea))
-
+# TODO: check that these still work with AtomGraph case, may need to add something and/or change it to use SparseMatrixCSC
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
   SparseMatrixCSC{T,N}(arr), Δ -> (collect(Δ),)

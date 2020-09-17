@@ -50,6 +50,7 @@ end
 - input: AtomGraph object
 """
 
+
 function (l::AGNConv)(ag::AtomGraph{T}) where T
     lapl = ag.lapl
     X = ag.features

@@ -83,7 +83,7 @@ println("Building the network...")
 #model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1))
 model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, num_hidden_layers=1)
 
-# TODO: MaxPool might make more sense
+# MaxPool might make more sense?
 
 # define loss function
 loss(x,y) = Flux.mse(model(x), y)

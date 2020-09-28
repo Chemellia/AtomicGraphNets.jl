@@ -56,6 +56,8 @@ println("Building graphs and feature vectors from structures...")
 #inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
 inputs = AtomGraph{SimpleWeightedGraph{Int32, Float32}}[]
 
+#TODO: this with bulk processing fcn
+
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
     gr, els = build_graph(cifpath)

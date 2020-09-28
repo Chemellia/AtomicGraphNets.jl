@@ -24,8 +24,6 @@ include("../src/layers.jl")
 
     @test feature(l(fg)) == feature(l(graph(fg).weights, feature(fg)))
     @test AtomicGraphNets.reg_norm(softplus(4.0) .* ones(4,3)) == feature(l(fg))
-
-    # TODO: add test that laplacian reflects weights
 end
 
 @testset "pooling" begin

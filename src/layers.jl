@@ -42,23 +42,19 @@ end
 
 @functor AGNConv
 
-# TODO here: in the case of chaining multiple of these layers together, should make a way to pass laplacian through so it doesn't have to get computed each time (maybe some kind of flag to specify which is being given?)
 """
  Define action of layer on inputs: do a graph convolution, add this (weighted by convolutional weight) to the features themselves (weighted by self weight) and the per-feature bias (concatenated to match number of nodes in graph).
 
 # Arguments
 - input: AtomGraph object
 """
-
-
-function (l::AGNConv)(ag::AtomGraph{T}) where T
+function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
     out_mat = reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
     AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, ag.featurization)
 end
 
-# TODO: check that these still work with AtomGraph case, may need to add something and/or change it to use SparseMatrixCSC
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
   SparseMatrixCSC{T,N}(arr), Δ -> (collect(Δ),)
@@ -85,7 +81,7 @@ struct AGNMeanPool
     pool_width_frac::Float32
 end
 
-pool_out_features(num_f::Int64, dim::Int64, stride::Int64, pad::Int64) = Int64(floor((num_f+2*pad-dim)/stride + 1))
+pool_out_features(num_f::Int64, dim::Int64, stride::Int64, pad::Int64) = Int64(floor((num_f + 2 * pad - dim) / stride + 1))
 
 """
 Helper function to work out dim, pad, and stride for desired number of output features, given a fixed pooling width.
@@ -96,15 +92,11 @@ function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float3
     str = Int64(floor(num_f_in/num_f_out))
     p_numer = str*(num_f_out-1) - (num_f_in - dim)
     if p_numer < 0
-        if p_numer == -1
-            dim = dim + 1
-        else
-            str = str + 1
-        end
+        p_numer == -1 ? dim = dim + 1 : str = str + 1
     end
     p_numer = str*(num_f_out-1) - (num_f_in - dim)
     if p_numer < 0
-        print("problem, negative p!")
+        error("problem, negative p!")
     end
     if p_numer % 2 == 0
         pad = Int64(p_numer/2)
@@ -120,7 +112,7 @@ function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float3
     dim, str, pad
 end
 
-function (m::AGNMeanPool)(ag::AtomGraph{})
+function (m::AGNMeanPool)(ag::AtomGraph)
       # compute what pad and stride need to be...
       x = ag.features
       x = reshape(x, (size(x)..., 1, 1))
@@ -138,7 +130,7 @@ struct AGNMaxPool
     pool_width_frac::Float32
 end
 
-function (m::AGNMaxPool)(fg::AtomGraph{})
+function (m::AGNMaxPool)(fg::AtomGraph)
       # compute what pad and stride need to be...
       x = ag.features
       x = reshape(x, (size(x)..., 1, 1))

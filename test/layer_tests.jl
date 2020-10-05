@@ -1,55 +1,54 @@
 using Test
+using ChemistryFeaturization
 
 include("../src/layers.jl")
 
 @testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones
     adjmat = Float32.([0 1 0; 1 0 1; 0 1 0])
-    fg = FeaturedGraph(SimpleWeightedGraph(adjmat), ones(4,3))
+    dummyfzn = [AtomFeat(:feat, [0]) for i in 1:4]
+    ag = AtomGraph(SimpleWeightedGraph{Int32, Float32}(adjmat), ["C", "C", "C"], ones(Float32, 4,3), dummyfzn)
     # create a conv layer, initialize weights with ones
     l = AGNConv(4=>4, initW=ones)
 
-    # test that two function signatures give same result
-    @test feature(l(fg)) == feature(l(graph(fg).weights, feature(fg)))
-
     # test output looks as expected
-    output_fea = feature(l(fg))
+    output_fea = l(ag).features
     @test output_fea[:,1]==output_fea[:,3]
     @test isapprox(output_fea[:,1].+output_fea[:,3], .-output_fea[:,2])
 
     # and now for a loop
     adjmat = Float32.([0 1 1; 1 0 1; 1 1 0])
-    fg = FeaturedGraph(SimpleWeightedGraph(adjmat), ones(4,3))
+    ag = AtomGraph(SimpleWeightedGraph{Int32, Float32}(adjmat), ["C", "C", "C"], ones(Float32, 4,3), dummyfzn)
     l = AGNConv(4=>4, initW=ones)
 
-    @test feature(l(fg)) == feature(l(graph(fg).weights, feature(fg)))
-    @test AtomicGraphNets.reg_norm(softplus(4.0) .* ones(4,3)) == feature(l(fg))
+    @test all(isapprox.(l(ag).features, zero(Float32)))
 end
 
 @testset "pooling" begin
     # keep our little line graph, but give it more features
     adjmat = Float32.([0 1 0; 1 0 1; 0 1 0])
-    feat = ones(50,3)
-    fg = FeaturedGraph(SimpleWeightedGraph(adjmat), feat)
+    feat = ones(Float32, 50,3)
+    dummyfzn = [AtomFeat(:feat, [0]) for i in 1:50]
+    ag = AtomGraph(SimpleWeightedGraph{Int32, Float32}(adjmat), ["C", "C", "C"], feat, dummyfzn)
 
     # make some pooling layers
     meanpool = AGNMeanPool(10, 0.1)
     maxpool = AGNMaxPool(10, 0.1)
 
     # start with the easy stuff
-    @test meanpool(fg) == ones(10,1)
-    @test maxpool(fg) == ones(10,1)
+    @test meanpool(ag) == ones(Float32, 10, 1)
+    @test maxpool(ag) == ones(Float32, 10, 1)
 
     # one level up
     feat[:,2] .= 0.0
-    fg = FeaturedGraph(SimpleWeightedGraph(adjmat), feat)
+    add_features!(ag, feat, dummyfzn)
     # they're still the same here because maxpool takes max along features but averages across nodes right now
-    @test all(meanpool(fg) .== 2/3)
-    @test all(maxpool(fg) .== 2/3)
+    @test all(isapprox.(meanpool(ag), 2/3))
+    @test all(isapprox.(maxpool(ag), 2/3))
 
     # and now make them different
     feat[1:5:50,2] .= 4.0
-    fg = FeaturedGraph(SimpleWeightedGraph(adjmat), feat)
-    @test all(isapprox.(meanpool(fg), 14/15))
-    @test all(maxpool(fg) .== 2.0)
+    add_features!(ag, feat, dummyfzn)
+    @test all(isapprox.(meanpool(ag), 14/15))
+    @test all(maxpool(ag) .== 2.0)
 end

@@ -10,7 +10,7 @@ using ChemistryFeaturization
 function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     μ′ = mean(x)
     σ′ = std(x, mean = μ′, corrected=false)
-    return (x .- μ′) ./ (σ′ + ϵ)
+    return Float32.((x .- μ′) ./ (σ′ + ϵ))
 end
 
 
@@ -51,8 +51,8 @@ end
 function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
-    out_mat = reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...)))
-    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, ag.featurization)
+    out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))))
+    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[])
 end
 
 # fixes from Dhairya so backprop works
@@ -130,7 +130,7 @@ struct AGNMaxPool
     pool_width_frac::Float32
 end
 
-function (m::AGNMaxPool)(fg::AtomGraph)
+function (m::AGNMaxPool)(ag::AtomGraph)
       # compute what pad and stride need to be...
       x = ag.features
       x = reshape(x, (size(x)..., 1, 1))

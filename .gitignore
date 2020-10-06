@@ -8,3 +8,4 @@ data/*/*.cif
 data/*/*.txt
 *#
 .vscode/*
+Manifest.toml

@@ -15,9 +15,11 @@ Herein you can find the beginnings of a package to implement [Crystal Graph Conv
 This package depends on ChemistryFeaturization.jl, which depends on some pretty hefty Python packages that in turn have many of their own dependencies. If you have an existing Conda.jl installation, you may be able to install everything without issue, but the cleanest approach will likely be to create a conda environment just for this package and install the dependencies from scratch there.
 
 ## Future plans
-* make tests, docs
-* fix random weird stuff as noted in comments
-* more options for features, layers, network architectures...
+* make docs
+* more network architectures (see issues for some ideas)
 
 ## Contact
 Please feel free to fork and play, and reach out here on GitHub or to rkurchin [at] cmu [dot] edu with suggestions, etc.!
+
+## Acknowledgements
+Many thanks to [Dhairya Gandhi](https://github.com/DhairyaLGandhi) for helping out with some adjoints to actually make these layers trainable! :D

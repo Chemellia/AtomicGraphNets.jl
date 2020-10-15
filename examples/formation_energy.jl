@@ -3,15 +3,13 @@
 =#
 #using Pkg
 #Pkg.activate("../../")
-#using GraphPlot, Colors
 using CSV
-using SparseArrays
 using Random, Statistics
 using Flux
 using Flux: @epochs
 using SimpleWeightedGraphs
-using AtomicGraphNets
 using ChemistryFeaturization
+using AtomicGraphNets
 
 println("Setting things up...")
 
@@ -25,14 +23,13 @@ prop = "formation_energy_per_atom"
 datadir = "../../MP_data/"
 id = "task_id" # field by which to label each input material
 
-
 # atom featurization, pretty arbitrary choices for now
 features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
 num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
 # returns actual vectors (in a dict with keys of elements) plus Vector of AtomFeat objects describing featurization metadata
-atom_feature_vecs, featurization = make_feature_vectors(features, num_bins, logspaced)
+atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?
@@ -54,21 +51,16 @@ println("Building graphs and feature vectors from structures...")
 #graphs = SimpleWeightedGraph{Int32, Float32}[]
 #element_lists = Array{String}[]
 #inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
-inputs = AtomGraph{SimpleWeightedGraph{Int32, Float32}}[]
+inputs = AtomGraph[]
 
 #TODO: this with bulk processing fcn
 
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    gr, els = build_graph(cifpath)
-    #push!(graphs, graph)
-    #push!(element_lists, els)
-    #input = hcat([atom_feature_vecs[e] for e in el_list]...)
-    feature_mat = hcat([atom_feature_vecs[e] for e in els]...)
-    input = AtomGraph(SimpleWeightedGraph{Int32}(Float32.(gr)), els, Float32.(feature_mat), featurization)
-    #input = FeaturedGraph(SimpleWeightedGraph{Int32}(Float32.(gr)), feature_mat)
-    #push!(inputs, (input, adjacency_matrix(graph)))
-    push!(inputs, input)
+    gr = build_graph(cifpath)
+    feature_mat = hcat([atom_feature_vecs[e] for e in gr.elements]...)
+    add_features!(gr, feature_mat, featurization)
+    push!(inputs, gr)
 end
 
 # pick out train/test sets

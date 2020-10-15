@@ -38,6 +38,8 @@ function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_unifor
     convweight = T.(initW(ch[2], ch[1]))
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
+    CGCNConv(selfweight, convweight, b, σ)
+>>>>>>> make CGCNConv arrays abstract, change to Zygote
 end
 
 @functor AGNConv
@@ -123,6 +125,8 @@ function (m::AGNMeanPool)(ag::AtomGraph)
       pdims = PoolDims(x, (dim,1); padding=(pad,0), stride=(str,1))
       mean(Flux.meanpool(x, pdims), dims=2)[:,:,1,1]
 end
+
+(m::CGCNMeanPool)(fg::FeaturedGraph{}) = m(feature(fg))
 
 """Like above, but for max pooling"""
 struct AGNMaxPool

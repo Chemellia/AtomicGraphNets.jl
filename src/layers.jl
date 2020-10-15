@@ -39,7 +39,6 @@ function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_unifor
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
     CGCNConv(selfweight, convweight, b, σ)
->>>>>>> make CGCNConv arrays abstract, change to Zygote
 end
 
 @functor AGNConv

@@ -14,7 +14,6 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     return Float32.((x .- μ′) ./ (σ′ + ϵ))
 end
 
-
 struct AGNConv{T,F}
     selfweight::Array{T,2}
     convweight::Array{T,2}
@@ -39,8 +38,6 @@ function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_unifor
     convweight = T.(initW(ch[2], ch[1]))
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
-    CGCNConv(selfweight, convweight, b, σ)
->>>>>>> make CGCNConv arrays abstract, change to Zygote
 end
 
 @functor AGNConv
@@ -127,8 +124,6 @@ function (m::AGNMeanPool)(ag::AtomGraph)
       mean(Flux.meanpool(x, pdims), dims=2)[:,:,1,1]
 end
 
-(m::CGCNMeanPool)(fg::FeaturedGraph{}) = m(feature(fg))
-
 """Like above, but for max pooling"""
 struct AGNMaxPool
     out_num_features::Int64
@@ -147,37 +142,37 @@ function (m::AGNMaxPool)(ag::AtomGraph)
       mean(Flux.maxpool(x, pdims), dims=2)[:,:,1,1]
 end
 
-(m::CGCNMaxPool)(fg::FeaturedGraph{}) = m(feature(fg))
-
 # DEQ-style model where we treat the convolution as a SteadyStateProblem
-struct CGCNConvDEQ{T,F}
-    conv::CGCNConv{T,F}
+struct AGNConvDEQ{T,F}
+    conv::AGNConv{T,F}
 end
 
-function CGCNConvDEQ(ch::Pair{<:Integer,<:Integer}, σ=softplus; init=glorot_uniform, T::DataType=Float32, bias::Bool=true)
-    conv = CGCNConv(ch, σ; init=init, T=T, bias=bias)
-    CGCNConvDEQ(conv)
+function AGNConvDEQ(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=glorot_uniform, T::DataType=Float32, bias::Bool=true)
+    conv = AGNConv(ch, σ; initW=initW, initb=initb, T=T)
+    AGNConvDEQ(conv)
 end
 
-@functor CGCNConvDEQ
+@functor AGNConvDEQ
 
 # set up SteadyStateProblem where the derivative is the convolution operation
 # (we want the "fixed point" of the convolution)
 # need it in the form f(u,p,t) (but t doesn't matter)
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
-function (l::CGCNConvDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
+function (l::AGNConvDEQ)(gr::AtomGraph)
     p,re = destructure(l.conv)
     # do one convolution to get initial guess
-    guess = feature(l.conv(gr))
+    guess = l.conv(gr).features
 
     f = function (dfeat,feat,p,t)
-        input = FeaturedGraph(gr,feat)
+        input = gr
+        input.features = feat
         output = re(p)(input)
-        dfeat .= feature(output) .- feature(input)
+        dfeat .= output.features .- input.features
     end
 
     prob = SteadyStateProblem{true}(f, guess, p)
     #return solve(prob, DynamicSS(Tsit5())).u
-    return reshape(solve(prob, SSRootfind(), sensealg = SteadyStateAdjoint(autojacvec = ZygoteVJP())).u, size(guess))
+    out_mat = reshape(solve(prob, SSRootfind(), sensealg = SteadyStateAdjoint(autojacvec = ZygoteVJP())).u, size(guess))
+    return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end

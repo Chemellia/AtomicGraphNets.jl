@@ -4,7 +4,7 @@ module AtomicGraphNets
 import Flux:@functor
 
 include("layers.jl")
-export AGNConv, AGNMeanPool, AGNMaxPool
+export AGNConv, AGNMeanPool, AGNMaxPool, AGNConvDEQ
 
 include("models.jl")
 export Xie_model

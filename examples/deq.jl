@@ -3,15 +3,13 @@ Basically the same as the first example, but trying the DEQ approach using Stead
 =#
 using Pkg
 Pkg.activate("../")
-using GraphPlot, Colors
 using CSV
-using SparseArrays
 using Random, Statistics
 using Flux
 using Flux: @epochs
-using GeometricFlux
 using SimpleWeightedGraphs
-using CrystalGraphConvNets
+using ChemistryFeaturization
+using AtomicGraphNets
 
 # data-related options
 num_pts = 20 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
@@ -20,15 +18,15 @@ num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
-datadir = "../data/"
+datadir = "../../MP_data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
-features = ["group", "row", "block", "atomic_mass", "atomic_radius", "X"]
-num_bins = [18, 8, 4, 16, 10, 10]
+features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
+num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
-atom_feature_vecs = make_feature_vectors(features, num_bins, logspaced)
+atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
@@ -47,20 +45,18 @@ output = y[indices]
 # next, make graphs and build input features (matrices of dimension (# features, # nodes))
 println("Building graphs and feature vectors from structures...")
 #graphs = SimpleWeightedGraph{Int32, Float32}[]
-element_lists = Array{String}[]
+#element_lists = Array{String}[]
 #inputs = Tuple{Array{Float32,2},SparseArrays.SparseMatrixCSC{Float32,Int64}}[]
-inputs = FeaturedGraph{SimpleWeightedGraph{Int32, Float32}, Array{Float32,2}}[]
-# TODO: figure out null pyobject issue with build_graph
+inputs = AtomGraph[]
+
+#TODO: this with bulk processing fcn
+
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    gr, els = build_graph(cifpath)
-    #push!(graphs, graph)
-    push!(element_lists, els)
-    #input = hcat([atom_feature_vecs[e] for e in el_list]...)
-    feature_mat = hcat([atom_feature_vecs[e] for e in els]...)
-    input = FeaturedGraph(gr, feature_mat)
-    #push!(inputs, (input, adjacency_matrix(graph)))
-    push!(inputs, input)
+    gr = build_graph(cifpath)
+    feature_mat = hcat([atom_feature_vecs[e] for e in gr.elements]...)
+    add_features!(gr, feature_mat, featurization)
+    push!(inputs, gr)
 end
 
 # pick out train/test sets
@@ -72,7 +68,7 @@ test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
 
 # moved DEQ to its own layer definition
-model = Chain(CGCNConvDEQ(num_features=>num_features), CGCNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+model = Chain(AGNConvDEQ(num_features=>num_features), AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
 
 loss(x,y) = Flux.mse(model(x), y)
 # and a callback to see training progress
@@ -87,8 +83,6 @@ evalcb()
 println("Training!")
 #Flux.train!(loss, params(model), train_data, opt)
 @epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
-
-
 
 #=
 # a much simpler case...one graph (just a triangle), just one feature per node

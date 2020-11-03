@@ -19,7 +19,7 @@ graph_dir = "graphs/"
 # data-related options
 num_pts = 111
 train_frac = 0.8 # what fraction for training?
-num_epochs = 100 # how many epochs to train?
+num_epochs = 40 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = :u0 # internal energy at 0K
@@ -35,10 +35,12 @@ logspaced = [false, false, false, true, true, false]
 atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
-num_conv = 3 # how many convolutional layers?
+num_conv = 5 # how many convolutional layers?
+atom_fea_len = 80
 crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
-num_hidden_layers = 1 # how many fully-connected layers after convolution and pooling?
-opt = ADAM(0.001) # optimizer
+pool_type = "max"
+num_hidden_layers = 2 # how many fully-connected layers after convolution and pooling?
+opt = ADAM(0.003) # optimizer
 
 # shuffle data and pick out subset
 indices = shuffle(1:size(info,1))[1:num_pts]
@@ -70,7 +72,7 @@ train_data = zip(train_input, train_output)
 
 # build the model
 println("Building the network...")
-model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, num_hidden_layers=num_hidden_layers)
+model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=atom_fea_len, pool_type=pool_type, pooled_feature_length=crys_fea_len, num_hidden_layers=num_hidden_layers)
 
 # define loss function
 loss(x,y) = Flux.mse(model(x), y)
@@ -80,4 +82,4 @@ evalcb()
 
 # train
 println("Training!")
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 600))
+@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 10))

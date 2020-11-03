@@ -1,9 +1,9 @@
 #=
-Basically the same as the first example, but trying the DEQ approach using SteadyStateProblem.
+ Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
-using Pkg
-Pkg.activate("../")
-using CSV
+#using Pkg
+#Pkg.activate("../../")
+using CSV, DataFrames
 using Random, Statistics
 using Flux
 using Flux: @epochs
@@ -11,8 +11,10 @@ using SimpleWeightedGraphs
 using ChemistryFeaturization
 using AtomicGraphNets
 
+println("Setting things up...")
+
 # data-related options
-num_pts = 20 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
+num_pts = 100 # how many points to use? Up to 32530 in the formation energy case as of 2020/04/01
 train_frac = 0.8 # what fraction for training?
 num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
@@ -26,15 +28,17 @@ features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"
 num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
+# returns actual vectors (in a dict with keys of elements) plus Vector of AtomFeat objects describing featurization metadata
 atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
+num_conv = 3 # how many convolutional layers?
 crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
 num_hidden_layers = 1 # how many fully-connected layers after convolution and pooling?
 opt = ADAM(0.001) # optimizer
 
 # dataset...first, read in outputs
-info = CSV.read(string(datadir,prop,".csv"))
+info = CSV.read(string(datadir,prop,".csv"), DataFrame)
 y = Array(Float32.(info[!, Symbol(prop)]))
 
 # shuffle data and pick out subset
@@ -67,73 +71,21 @@ train_input = inputs[1:num_train]
 test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
 
-# moved DEQ to its own layer definition
-model = Chain(AGNConvDEQ(num_features=>num_features), AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+# build the network (basically just copied from CGCNN.py for now): the convolutional layers, a mean pooling function, some dense layers, then fully connected output to one value for prediction
 
+println("Building the network...")
+#model = Chain([AGNConv(num_features=>num_features) for i in 1:num_conv]..., AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1))
+model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, num_hidden_layers=1)
+
+# MaxPool might make more sense?
+
+# define loss function
 loss(x,y) = Flux.mse(model(x), y)
 # and a callback to see training progress
 evalcb() = @show(mean(loss.(test_input, test_output)))
 evalcb()
 
-# TODO: troubleshoot training (type inference)
-# --> maybe try a fixed graph with different features and only weights in the convolution
-# so passing one matrix could maybe work?
-
 # train
 println("Training!")
 #Flux.train!(loss, params(model), train_data, opt)
 @epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
-
-#=
-# a much simpler case...one graph (just a triangle), just one feature per node
-# only conv weight, no self weight or bias
-f = function (dfeat,feat,convwt,t)
-    gr = SimpleWeightedGraph{Int32, Float32}([0 1 1; 1 0 1; 1 1 0])
-    output = softplus(convwt * feat * normalized_laplacian(gr) + feat)
-    dfeat = output .- feat
-end
-
-struct SimpleDEQ{T}
-    convwt::Array{T,2}
-end
-
-@functor SimpleDEQ
-
-function SimpleDEQ(ch::Pair{<:Integer,<:Integer}; init=glorot_uniform, T::DataType=Float32, bias::Bool=true)
-    convwt = init(ch[2], ch[1])
-    SimpleDEQ(convwt)
-end
-
-function (l::SimpleDEQ)(gr::FeaturedGraph{T,S}) where {T,S}
-    # do one convolution to get initial guess
-    guess = l.convwt * feature(gr) * normalized_laplacian(graph(gr)) + feature(gr)
-    prob = SteadyStateProblem{true}(f, guess, l.convwt)
-    return solve(prob, DynamicSS(Tsit5())).u
-end
-
-layer = SimpleDEQ(1=>1)
-poollyr = CGCNMeanPool(1, 0.2)
-model = Chain(layer, poollyr)
-
-gr = SimpleWeightedGraph{Int32, Float32}([0 1 1; 1 0 1; 1 1 0])
-
-# try making some arbitrary training data
-# just mapping to average for something stupid simple
-
-feat1 = [3. 4. 5.]
-out1 = 4.
-inp1 = FeaturedGraph(gr, feat1)
-feat2 = [0. 4. 5.]
-out2 = 3.
-inp2 = FeaturedGraph(gr, feat2)
-
-simple_in = [inp1, inp2]
-simple_out = [out1, out2]
-
-# okay let's try it!
-loss(x,y) = Flux.mse(model(x), y)
-evalcb() = @show(mean(loss.(simple_in, simple_out)))
-evalcb()
-
-Flux.train!(loss, params(model), zip(simple_in, simple_out), opt)
-=#

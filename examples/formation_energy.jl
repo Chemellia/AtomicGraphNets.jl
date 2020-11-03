@@ -3,7 +3,7 @@
 =#
 #using Pkg
 #Pkg.activate("../../")
-using CSV
+using CSV, DataFrames
 using Random, Statistics
 using Flux
 using Flux: @epochs
@@ -38,7 +38,7 @@ num_hidden_layers = 1 # how many fully-connected layers after convolution and po
 opt = ADAM(0.001) # optimizer
 
 # dataset...first, read in outputs
-info = CSV.read(string(datadir,prop,".csv"))
+info = CSV.read(string(datadir,prop,".csv"), DataFrame)
 y = Array(Float32.(info[!, Symbol(prop)]))
 
 # shuffle data and pick out subset

@@ -130,6 +130,7 @@ end
 function (m::AGNPool)(ag::AtomGraph)
       # compute what pad and stride need to be...
       x = ag.features
+      x = reshape(x, (size(x)..., 1, 1))
       # do mean pooling across feature direction, average across all nodes in graph
       # TODO: decide if this approach makes sense or if there's a smarter way
       pdims = PoolDims(x, (m.dim,1); padding=(m.pad,0), stride=(m.str,1))

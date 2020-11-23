@@ -88,9 +88,9 @@ version = "0.5.3"
 
 [[ChemistryFeaturization]]
 deps = ["CSV", "Colors", "Conda", "DataFrames", "DataStructures", "Flux", "GraphPlot", "JSON", "LightGraphs", "LinearAlgebra", "PyCall", "Serialization", "SimpleWeightedGraphs"]
-git-tree-sha1 = "c83dce267a4d27d086aa636b8ed9f9899615eaed"
+git-tree-sha1 = "c3ec82f08c5722376ccb6c90a6f137665f2bc569"
 repo-rev = "master"
-repo-url = "../ChemistryFeaturization.jl"
+repo-url = "https://github.com/aced-differentiate/ChemistryFeaturization.jl"
 uuid = "6c925690-434a-421d-aea7-51398c5b007a"
 version = "0.1.0"
 

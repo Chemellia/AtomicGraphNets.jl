@@ -13,6 +13,8 @@ using ChemistryFeaturization
 using AtomicGraphNets
 using Serialization
 
+cd(@__DIR__)
+
 println("Setting things up...")
 
 # where to find the inputs
@@ -75,7 +77,11 @@ model = Chain(AGNConvDEQ(num_features=>num_features), AGNMeanPool(crys_fea_len, 
 loss(x,y) = Flux.mse(model(x), y)
 # and a callback to see training progress
 evalcb() = @show(mean(loss.(test_input, test_output)))
-evalcb() # this hangs for at least 20 minutes...
+@time evalcb()
+
+using Profile
+Profile.clear()
+@profile evalcb() # this hangs for at least 20 minutes...
 
 # TODO: troubleshoot training (type inference)
 # --> maybe try a fixed graph with different features and only weights in the convolution
@@ -84,7 +90,8 @@ evalcb() # this hangs for at least 20 minutes...
 # train
 println("Training!")
 #Flux.train!(loss, params(model), train_data, opt)
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
+@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5
+))
 
 #=
 # a much simpler case...one graph (just a triangle), just one feature per node

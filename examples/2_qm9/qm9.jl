@@ -9,6 +9,8 @@ using ChemistryFeaturization
 using AtomicGraphNets
 using Serialization
 
+cd(@__DIR__)
+
 println("Setting things up...")
 
 # where to find the inputs

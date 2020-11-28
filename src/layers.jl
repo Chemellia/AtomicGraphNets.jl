@@ -51,7 +51,7 @@ end
 function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
-    out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))))
+    out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + reduce(hcat,l.bias for i in 1:size(X, 2)))))
     AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[])
 end
 
@@ -160,19 +160,21 @@ end
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
 function (l::AGNConvDEQ)(gr::AtomGraph)
-    p,re = destructure(l.conv)
+    p,re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
     guess = l.conv(gr).features
 
     f = function (dfeat,feat,p,t)
         input = gr
-        input.features = feat
+        input.features = reshape(feat,size(guess))
         output = re(p)(input)
-        dfeat .= output.features .- input.features
+        dfeat .= vec(output.features) .- vec(input.features)
     end
 
-    prob = SteadyStateProblem{true}(f, guess, p)
+    prob = SteadyStateProblem{true}(f, vec(guess), p)
     #return solve(prob, DynamicSS(Tsit5())).u
-    out_mat = reshape(solve(prob, SSRootfind(), sensealg = SteadyStateAdjoint(autojacvec = ZygoteVJP())).u, size(guess))
+    alg = SSRootfind()
+    #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
+    out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end

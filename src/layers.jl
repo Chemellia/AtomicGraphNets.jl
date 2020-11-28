@@ -72,13 +72,24 @@ end
 end
 
 """
-Custom mean pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux MeanPool.
+Custom pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux MeanPool.
 
 It accepts a pooling width and will adjust stride and/or padding such that the output vector length is correct.
 """
-struct AGNMeanPool
-    out_num_features::Int64
-    pool_width_frac::Float32
+struct AGNPool
+    pool_func::Function
+    dim::Int64
+    str::Int64
+    pad::Int64
+    function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::AbstractFloat)
+    dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
+    if pool_type=="max"
+        pool_func = Flux.maxpool
+    elseif pool_type=="mean"
+        pool_func = Flux.meanpool
+    end
+    new(pool_func, dim, str, pad)
+    end
 end
 
 pool_out_features(num_f::Int64, dim::Int64, stride::Int64, pad::Int64) = Int64(floor((num_f + 2 * pad - dim) / stride + 1))
@@ -86,10 +97,10 @@ pool_out_features(num_f::Int64, dim::Int64, stride::Int64, pad::Int64) = Int64(f
 """
 Helper function to work out dim, pad, and stride for desired number of output features, given a fixed pooling width.
 """
-function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float32)
+function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float32; start_dim=Int64(round(dim_frac*num_f_in)), start_str=Int64(floor(num_f_in/num_f_out)))
     # take starting guesses
-    dim = Int64(round(dim_frac*num_f_in))
-    str = Int64(floor(num_f_in/num_f_out))
+    dim = start_dim
+    str = start_str
     p_numer = str*(num_f_out-1) - (num_f_in - dim)
     if p_numer < 0
         p_numer == -1 ? dim = dim + 1 : str = str + 1
@@ -109,37 +120,21 @@ function compute_pool_params(num_f_in::Int64, num_f_out::Int64, dim_frac::Float3
         print("problem, output feature wrong length!")
     end
     # check if pad gets comparable to width...
+    if pad >= 0.8*dim
+        @warn "specified pooling width was hard to satisfy without nonsensically large padding relative to width, had to increase from desired width"
+        dim, str, pad  = compute_pool_params(num_f_in, num_f_out, dim_frac, start_dim=Int64(round(1.2*start_dim)))
+    end
     dim, str, pad
 end
 
-function (m::AGNMeanPool)(ag::AtomGraph)
+function (m::AGNPool)(ag::AtomGraph)
       # compute what pad and stride need to be...
       x = ag.features
       x = reshape(x, (size(x)..., 1, 1))
-      num_features, num_nodes = size(x)
-      dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
       # do mean pooling across feature direction, average across all nodes in graph
       # TODO: decide if this approach makes sense or if there's a smarter way
-      pdims = PoolDims(x, (dim,1); padding=(pad,0), stride=(str,1))
-      mean(Flux.meanpool(x, pdims), dims=2)[:,:,1,1]
-end
-
-"""Like above, but for max pooling"""
-struct AGNMaxPool
-    out_num_features::Int64
-    pool_width_frac::Float32
-end
-
-function (m::AGNMaxPool)(ag::AtomGraph)
-      # compute what pad and stride need to be...
-      x = ag.features
-      x = reshape(x, (size(x)..., 1, 1))
-      num_features, num_nodes = size(x)
-      dim, str, pad = compute_pool_params(num_features, m.out_num_features, m.pool_width_frac)
-      # do max pooling along feature direction, average across all nodes in graph
-      # TODO: decide if this approach makes sense or if there's a smarter way
-      pdims = PoolDims(x, (dim,1); padding=(pad,0), stride=(str,1))
-      mean(Flux.maxpool(x, pdims), dims=2)[:,:,1,1]
+      pdims = PoolDims(x, (m.dim,1); padding=(m.pad,0), stride=(m.str,1))
+      mean(m.pool_func(x, pdims), dims=2)[:,:,1,1]
 end
 
 # DEQ-style model where we treat the convolution as a SteadyStateProblem

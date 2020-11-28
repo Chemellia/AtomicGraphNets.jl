@@ -32,8 +32,8 @@ end
     ag = AtomGraph(SimpleWeightedGraph{Int32, Float32}(adjmat), ["C", "C", "C"], feat, dummyfzn)
 
     # make some pooling layers
-    meanpool = AGNMeanPool(10, 0.1)
-    maxpool = AGNMaxPool(10, 0.1)
+    meanpool = AGNPool("mean", 50, 10, 0.1)
+    maxpool = AGNPool("max", 50, 10, 0.1)
 
     # start with the easy stuff
     @test meanpool(ag) == ones(Float32, 10, 1)

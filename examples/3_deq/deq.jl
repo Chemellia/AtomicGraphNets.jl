@@ -72,16 +72,19 @@ test_input = inputs[num_train+1:end]
 train_data = zip(train_input, train_output)
 
 # moved DEQ to its own layer definition
-model = Chain(AGNConvDEQ(num_features=>num_features), AGNMeanPool(crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1, softplus))
+model = Chain(AGNConvDEQ(num_features=>num_features), AGNPool("mean", num_features, crys_fea_len, 0.1), [Dense(crys_fea_len, crys_fea_len, softplus) for i in 1:num_hidden_layers]..., Dense(crys_fea_len, 1))
 
 loss(x,y) = Flux.mse(model(x), y)
 # and a callback to see training progress
 evalcb() = @show(mean(loss.(test_input, test_output)))
+println("Evaluating loss...")
 @time evalcb()
 
-using Profile
-Profile.clear()
-@profile evalcb() # this hangs for at least 20 minutes...
+#using Profile
+#Profile.clear()
+
+#println("Evaluating loss function...")
+#@profile evalcb() # this hangs for at least 20 minutes...
 
 # TODO: troubleshoot training (type inference)
 # --> maybe try a fixed graph with different features and only weights in the convolution
@@ -89,9 +92,9 @@ Profile.clear()
 
 # train
 println("Training!")
-#Flux.train!(loss, params(model), train_data, opt)
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5
-))
+#@time Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 300))
+@time Flux.train!(loss, params(model), train_data, opt)
+#@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
 
 #=
 # a much simpler case...one graph (just a triangle), just one feature per node

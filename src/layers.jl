@@ -81,7 +81,7 @@ struct AGNPool
     dim::Int64
     str::Int64
     pad::Int64
-    function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::AbstractFloat)
+    function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::Float64)
     dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
     if pool_type=="max"
         pool_func = Flux.maxpool

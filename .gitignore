@@ -10,3 +10,4 @@ data/*/*.txt
 .vscode/*
 Icon*
 */Icon*
+*/*/Icon*

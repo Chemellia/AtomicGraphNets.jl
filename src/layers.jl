@@ -1,10 +1,11 @@
 using Flux
-using Flux: glorot_uniform, @functor
+using Flux: glorot_uniform, @functor, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
+using DifferentialEquations, DiffEqSensitivity
 
 # regularized norm fcn, cut out the dims part
 function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
@@ -12,7 +13,6 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     σ′ = std(x, mean = μ′, corrected=false)
     return Float32.((x .- μ′) ./ (σ′ + ϵ))
 end
-
 
 struct AGNConv{T,F}
     selfweight::Array{T,2}
@@ -51,7 +51,7 @@ end
 function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
-    out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + hcat([l.bias for i in 1:size(X, 2)]...))))
+    out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + reduce(hcat,l.bias for i in 1:size(X, 2)))))
     AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[])
 end
 
@@ -81,7 +81,7 @@ struct AGNPool
     dim::Int64
     str::Int64
     pad::Int64
-    function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::AbstractFloat)
+    function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::Float64)
     dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
     if pool_type=="max"
         pool_func = Flux.maxpool
@@ -135,4 +135,41 @@ function (m::AGNPool)(ag::AtomGraph)
       # TODO: decide if this approach makes sense or if there's a smarter way
       pdims = PoolDims(x, (m.dim,1); padding=(m.pad,0), stride=(m.str,1))
       mean(m.pool_func(x, pdims), dims=2)[:,:,1,1]
+end
+
+# DEQ-style model where we treat the convolution as a SteadyStateProblem
+struct AGNConvDEQ{T,F}
+    conv::AGNConv{T,F}
+end
+
+function AGNConvDEQ(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=glorot_uniform, T::DataType=Float32, bias::Bool=true)
+    conv = AGNConv(ch, σ; initW=initW, initb=initb, T=T)
+    AGNConvDEQ(conv)
+end
+
+@functor AGNConvDEQ
+
+# set up SteadyStateProblem where the derivative is the convolution operation
+# (we want the "fixed point" of the convolution)
+# need it in the form f(u,p,t) (but t doesn't matter)
+# u is the features, p is the parameters of conv
+# re(p) reconstructs the convolution with new parameters p
+function (l::AGNConvDEQ)(gr::AtomGraph)
+    p,re = Flux.destructure(l.conv)
+    # do one convolution to get initial guess
+    guess = l.conv(gr).features
+
+    f = function (dfeat,feat,p,t)
+        input = gr
+        input.features = reshape(feat,size(guess))
+        output = re(p)(input)
+        dfeat .= vec(output.features) .- vec(input.features)
+    end
+
+    prob = SteadyStateProblem{true}(f, vec(guess), p)
+    #return solve(prob, DynamicSS(Tsit5())).u
+    alg = SSRootfind()
+    #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
+    out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
+    return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end

@@ -18,15 +18,11 @@ Network has convolution layers, then pooling to some fixed length, followed by D
 - `pooled_feature_length::Integer`: feature length to pool down to
 - `num_hidden_layers::Integer`: how many Dense layers before output? Note that if this is set to 1 there will be no nonlinearity imposed on these layers
 - `hidden_layer_activation::F`: activation function on hidden layers
+- `output_layer_activation::F`: activation function on output layer; should generally be identity for regression and something that normalizes appropriately (e.g. softmax) for classification
 - `output_length::Integer`: length of output vector
 - `initW::F`: function to use to initialize weights in trainable layers
 """
-function Xie_model(input_feature_length; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, num_hidden_layers=1, hidden_layer_activation=softplus, output_length=1, initW=glorot_uniform)
+function Xie_model(input_feature_length; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, num_hidden_layers=1, hidden_layer_activation=softplus, output_layer_activation=identity, output_length=1, initW=glorot_uniform)
     # add check that each feature length gets shorter, throw warning if not
-    if pool_type=="mean"
-        pool_layer = AGNMeanPool(pooled_feature_length, pool_width)
-    elseif pool_type=="max"
-        pool_layer = AGNMaxPool(pooled_feature_length, pool_width)
-    end
-    model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., pool_layer, [Dense(pooled_feature_length, pooled_feature_length, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(pooled_feature_length, output_length, initW=initW))
+    model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width), [Dense(pooled_feature_length, pooled_feature_length, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(pooled_feature_length, output_length, output_layer_activation, initW=initW))
 end

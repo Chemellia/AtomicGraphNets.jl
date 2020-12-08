@@ -5,6 +5,6 @@ include("layers.jl")
 using .layers: AGNConv, AGNPool
 
 include("models.jl")
-export Xie_model
+export build_CGCNN, build_SGCNN
 
 end

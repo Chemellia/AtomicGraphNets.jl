@@ -8,7 +8,7 @@ using SimpleWeightedGraphs
     in_fea_len = 40
     conv_fea_len = 20
     pool_fea_len = 10
-    model = build_CGCNN(in_fea_len, atom_conv_feature_length=conv_fea_len, pooled_feature_length=pool_fea_len, num_hidden_layers=2, initW=ones)
+    model = Xie_model(in_fea_len, atom_conv_feature_length=conv_fea_len, pooled_feature_length=pool_fea_len, num_hidden_layers=2, initW=ones)
 
     # check that everything is the size it should be
     @test length(model)==5

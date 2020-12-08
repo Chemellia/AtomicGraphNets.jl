@@ -418,7 +418,7 @@ version = "0.3.0"
 deps = ["ArnoldiMethod", "ColorTypes", "Colors", "Compose", "DelimitedFiles", "LightGraphs", "LinearAlgebra", "Random", "SparseArrays"]
 git-tree-sha1 = "f23d5fdecfd680d8e9bc6a59d0b45bbc9e482079"
 repo-rev = "master"
-repo-url = "https://github.com/JuliaGraphs/GraphPlot.jl.git"
+repo-url = "https://github.com/JuliaGraphs/GraphPlot.jl"
 uuid = "a2cc645c-3eea-5389-862e-a155d0052231"
 version = "0.4.3"
 

@@ -100,9 +100,9 @@ version = "0.9.0"
 
 [[ChainRules]]
 deps = ["ChainRulesCore", "ChainRulesTestUtils", "Compat", "LinearAlgebra", "Random", "Reexport", "Requires", "Statistics"]
-git-tree-sha1 = "09c9fcd398500ab851288597dfbdaf0530a509db"
+git-tree-sha1 = "78c2fa84cf13ce7d821f23947f66212c1f504960"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "0.7.36"
+version = "0.7.37"
 
 [[ChainRulesCore]]
 deps = ["LinearAlgebra", "MuladdMacro", "SparseArrays"]
@@ -495,9 +495,9 @@ version = "0.8.4"
 
 [[LLVM]]
 deps = ["CEnum", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "000a737732aa4eb996414c4685368f6a74b41d14"
+git-tree-sha1 = "a2101830a761d592b113129887fda626387f68d4"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "3.4.0"
+version = "3.5.1"
 
 [[LaTeXStrings]]
 git-tree-sha1 = "c7aebfecb1a60d59c0fe023a68ec947a208b1e6b"
@@ -556,9 +556,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LoopVectorization]]
 deps = ["ArrayInterface", "DocStringExtensions", "IfElse", "LinearAlgebra", "OffsetArrays", "SLEEFPirates", "UnPack", "VectorizationBase"]
-git-tree-sha1 = "023c5560b43e2547c13685d2aafab2e68e1a4cbf"
+git-tree-sha1 = "23cc13b36db72640d4e1f35ba37ecb481324ab88"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
-version = "0.9.3"
+version = "0.9.4"
 
 [[METIS_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -965,9 +965,9 @@ version = "1.5.1"
 
 [[StochasticDiffEq]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqJump", "DiffEqNoiseProcess", "FillArrays", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "Logging", "MuladdMacro", "NLsolve", "OrdinaryDiffEq", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
-git-tree-sha1 = "09c24c310da843a3c6b41984089f2a28c301d3b1"
+git-tree-sha1 = "45639f315a7ef682697f2c6175e7a4ddc538fd69"
 uuid = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-version = "6.26.0"
+version = "6.27.0"
 
 [[StructTypes]]
 deps = ["Dates", "UUIDs"]

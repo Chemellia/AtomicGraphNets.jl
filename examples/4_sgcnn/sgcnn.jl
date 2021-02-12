@@ -11,7 +11,7 @@ using ChemistryFeaturization
 using AtomicGraphNets
 using Serialization
 
-cd(@__DIR__)
+#cd(@__DIR__)
 
 graph_dir = "../../../data/OCP/traj_test_graphs/"
 bulk_graph_dir = "../../../data/OCP/traj_test_bulk_graphs/"
@@ -32,6 +32,21 @@ for i in 1:length(surf_graphs_files)
     end
 end
 surf_graphs = surf_graphs[keep_inds]
+info = info[keep_inds, :]
+y = y[keep_inds]
+
+keep_inds = []
+# now cut out any with NaN laplacians in either set
+for i in 1:length(bulk_graphs)
+    
+end
+
+# shuffle data and pick out subset
+indices = shuffle(1:size(info,1))[1:num_pts]
+info = info[indices, :]
+output = y[indices]
+bulk_graphs = bulk_graphs[indices]
+surf_graphs = surf_graphs[indices]
 
 # atom featurization, pretty arbitrary choices for now
 features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])

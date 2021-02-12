@@ -40,6 +40,8 @@ end
 
 """
 Build a slab graph network. For now, fixing both "parallel" convolutional paths to have same hyperparams for simplicity. Might relax this later.
+
+TODO: change this to use the new Flux.Parallel construct
 """
 function build_SGCNN(input_feature_length::Integer; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, hidden_layer_width=40, num_hidden_layers=3, hidden_layer_activation=softplus, output_layer_activation=identity, output_length=1, initW=glorot_uniform)
     bulk_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))

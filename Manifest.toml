@@ -106,9 +106,9 @@ version = "0.9.28"
 
 [[ChemistryFeaturization]]
 deps = ["CSV", "Colors", "Compose", "Conda", "DataFrames", "DataStructures", "DiffEqBase", "Flux", "GraphPlot", "JSON", "LightGraphs", "LinearAlgebra", "PyCall", "Serialization", "SimpleWeightedGraphs"]
-git-tree-sha1 = "7eae73361ef1699f8bfc2ace69647271831ca324"
+git-tree-sha1 = "98aaff709e82fe87132f9674b8e30f7455d580ab"
 uuid = "6c925690-434a-421d-aea7-51398c5b007a"
-version = "0.1.0"
+version = "0.1.1"
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -169,9 +169,10 @@ uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 version = "1.5.0"
 
 [[ConstructionBase]]
-git-tree-sha1 = "a2a6a5fea4d6f730ec4c18a76d27ec10e8ec1c50"
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "48920211c95a6da1914a06c44ec94be70e84ffff"
 uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-version = "1.0.0"
+version = "1.1.0"
 
 [[CpuId]]
 deps = ["Markdown", "Test"]
@@ -588,9 +589,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[ModelingToolkit]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqJump", "DiffRules", "Distributed", "Distributions", "DocStringExtensions", "IfElse", "LabelledArrays", "Latexify", "Libdl", "LightGraphs", "LinearAlgebra", "MacroTools", "NaNMath", "RecursiveArrayTools", "Reexport", "Requires", "RuntimeGeneratedFunctions", "SafeTestsets", "SciMLBase", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicUtils", "TreeViews", "UnPack", "Unitful"]
-git-tree-sha1 = "04fc36d1751435ee8ab35f56936a988c84458a6d"
+git-tree-sha1 = "a777822f1fc689dc6856e5d538b9112b5a34f9a0"
 uuid = "961ee093-0014-501f-94e3-6117800e7a78"
-version = "5.6.0"
+version = "5.6.1"
 
 [[MuladdMacro]]
 git-tree-sha1 = "c6190f9a7fc5d9d5915ab29f2134421b12d24a68"

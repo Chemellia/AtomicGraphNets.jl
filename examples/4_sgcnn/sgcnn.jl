@@ -13,7 +13,7 @@ using Serialization
 using CSV, DataFrames
 using Statistics
 
-cd(@__DIR__)
+#cd(@__DIR__)
 
 # paths, options
 graph_dir = "/Users/rkurchin/GDrive/CMU/research/ARPA-E/data/OCP/traj_test_graphs/"
@@ -48,6 +48,12 @@ end
 surf_graphs = surf_graphs[keep_inds]
 info = info[keep_inds, :]
 y = y[keep_inds]
+
+keep_inds = []
+# now cut out any with NaN laplacians in either set
+for i in 1:length(bulk_graphs)
+    
+end
 
 # shuffle data and pick out subset
 indices = shuffle(1:size(info,1))[1:num_pts]

@@ -1,11 +1,11 @@
 using Flux
-using Flux: glorot_uniform, @functor, destructure
+using Flux: glorot_uniform, @functor#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
-using DifferentialEquations, DiffEqSensitivity
+#using DifferentialEquations, DiffEqSensitivity
 
 # regularized norm fcn, cut out the dims part
 function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
@@ -23,20 +23,20 @@ end
 
 """
     AGNConv(in=>out)
-    AGNConv(in=>out, σ)
 
 Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original AGNN structure, so explicitly has self and convolutional weights separately. Default activation function is softplus.
 
 # Arguments
 - `in::Integer`: the dimension of input features.
 - `out::Integer`: the dimension of output features.
-- `σ::F=softplus`: activation function
-- `bias::Bool=true`: keyword argument, whether to learn the additive bias.
+- `σ=softplus`: activation function
+- `initW=glorot_uniform`: initialization function for weights
+- `initb=zeros`: initialization function for biases
 """
-function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
-    selfweight = T.(initW(ch[2], ch[1]))
-    convweight = T.(initW(ch[2], ch[1]))
-    b = T.(initb(ch[2], 1))
+function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros)
+    selfweight = Float32.(initW(ch[2], ch[1]))
+    convweight = Float32.(initW(ch[2], ch[1]))
+    b = Float32.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
 end
 
@@ -137,6 +137,8 @@ function (m::AGNPool)(ag::AtomGraph)
       mean(m.pool_func(x, pdims), dims=2)[:,:,1,1]
 end
 
+# following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
+"""
 # DEQ-style model where we treat the convolution as a SteadyStateProblem
 struct AGNConvDEQ{T,F}
     conv::AGNConv{T,F}
@@ -173,3 +175,4 @@ function (l::AGNConvDEQ)(gr::AtomGraph)
     out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end
+"""

@@ -1,3 +1,5 @@
+module layers
+
 using Flux
 using Flux: glorot_uniform, @functor#, destructure
 using Zygote: @adjoint, @nograd
@@ -63,7 +65,7 @@ function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
     out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + reduce(hcat,l.bias for i in 1:size(X, 2)))))
-    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[])
+    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[], ag.id)
 end
 
 # fixes from Dhairya so backprop works
@@ -93,13 +95,14 @@ struct AGNPool
     str::Int64
     pad::Int64
     function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::Float64)
-    dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
-    if pool_type=="max"
-        pool_func = Flux.maxpool
-    elseif pool_type=="mean"
-        pool_func = Flux.meanpool
-    end
-    new(pool_func, dim, str, pad)
+        @assert in_num_features >= out_num_features "I don't think you actually want to pool to a LONGER vector, do you?"
+        dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
+        if pool_type=="max"
+            pool_func = Flux.maxpool
+        elseif pool_type=="mean"
+            pool_func = Flux.meanpool
+        end
+        new(pool_func, dim, str, pad)
     end
 end
 
@@ -187,3 +190,5 @@ function (l::AGNConvDEQ)(gr::AtomGraph)
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end
 """
+
+end

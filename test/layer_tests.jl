@@ -1,7 +1,9 @@
 using Test
 using ChemistryFeaturization
+using SimpleWeightedGraphs
 
 include("../src/layers.jl")
+using .layers: AGNConv, AGNPool
 
 @testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones

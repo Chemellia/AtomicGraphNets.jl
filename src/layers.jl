@@ -1,11 +1,13 @@
+module layers
+
 using Flux
-using Flux: glorot_uniform, @functor, destructure
+using Flux: glorot_uniform, @functor#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
-using DifferentialEquations, DiffEqSensitivity
+#using DifferentialEquations, DiffEqSensitivity
 
 # regularized norm fcn, cut out the dims part
 function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
@@ -14,6 +16,17 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     return Float32.((x .- μ′) ./ (σ′ + ϵ))
 end
 
+"""
+    AGNConv{T,F}
+
+An AtomicGraphNets convolutional layer.
+
+# Fields
+- `selfweight::Array{T,2}`: weights applied to features at a node
+- `convweight::Array{T,2}`: convolutional weights
+- `bias::Array{T,2}`: additive bias (second dimension is always 1 because only learnable per-feature, not per-node)
+- `σ::F`: activation function (will be applied before `reg_norm` to outputs)
+"""
 struct AGNConv{T,F}
     selfweight::Array{T,2}
     convweight::Array{T,2}
@@ -23,15 +36,15 @@ end
 
 """
     AGNConv(in=>out)
-    AGNConv(in=>out, σ)
 
 Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original AGNN structure, so explicitly has self and convolutional weights separately. Default activation function is softplus.
 
 # Arguments
 - `in::Integer`: the dimension of input features.
 - `out::Integer`: the dimension of output features.
-- `σ::F=softplus`: activation function
-- `bias::Bool=true`: keyword argument, whether to learn the additive bias.
+- `σ=softplus`: activation function
+- `initW=glorot_uniform`: initialization function for weights
+- `initb=zeros`: initialization function for biases
 """
 function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
     selfweight = T.(initW(ch[2], ch[1]))
@@ -52,7 +65,7 @@ function (l::AGNConv)(ag::AtomGraph)
     lapl = ag.lapl
     X = ag.features
     out_mat = Float32.(reg_norm(l.σ.(l.convweight * X * lapl + l.selfweight * X + reduce(hcat,l.bias for i in 1:size(X, 2)))))
-    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[])
+    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[], ag.id)
 end
 
 # fixes from Dhairya so backprop works
@@ -72,7 +85,7 @@ end
 end
 
 """
-Custom pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux MeanPool.
+Custom pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux's MeanPool.
 
 It accepts a pooling width and will adjust stride and/or padding such that the output vector length is correct.
 """
@@ -82,13 +95,14 @@ struct AGNPool
     str::Int64
     pad::Int64
     function AGNPool(pool_type::String, in_num_features::Int64, out_num_features::Int64, pool_width_frac::Float64)
-    dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
-    if pool_type=="max"
-        pool_func = Flux.maxpool
-    elseif pool_type=="mean"
-        pool_func = Flux.meanpool
-    end
-    new(pool_func, dim, str, pad)
+        @assert in_num_features >= out_num_features "I don't think you actually want to pool to a LONGER vector, do you?"
+        dim, str, pad = compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
+        if pool_type=="max"
+            pool_func = Flux.maxpool
+        elseif pool_type=="mean"
+            pool_func = Flux.meanpool
+        end
+        new(pool_func, dim, str, pad)
     end
 end
 
@@ -137,6 +151,8 @@ function (m::AGNPool)(ag::AtomGraph)
       mean(m.pool_func(x, pdims), dims=2)[:,:,1,1]
 end
 
+# following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
+"""
 # DEQ-style model where we treat the convolution as a SteadyStateProblem
 struct AGNConvDEQ{T,F}
     conv::AGNConv{T,F}
@@ -172,4 +188,7 @@ function (l::AGNConvDEQ)(gr::AtomGraph)
     #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
     out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
+end
+"""
+
 end

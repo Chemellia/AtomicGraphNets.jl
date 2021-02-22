@@ -1,7 +1,8 @@
 module AtomicGraphNets
 
+export AGNConv, AGNPool#, AGNConvDEQ
 include("layers.jl")
-export AGNConv, AGNPool, AGNConvDEQ
+using .layers: AGNConv, AGNPool
 
 include("models.jl")
 export Xie_model

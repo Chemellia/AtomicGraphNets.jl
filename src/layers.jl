@@ -14,6 +14,17 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
     return Float32.((x .- μ′) ./ (σ′ + ϵ))
 end
 
+"""
+    AGNConv{T,F}
+
+An AtomicGraphNets convolutional layer.
+
+# Fields
+- `selfweight::Array{T,2}`: weights applied to features at a node
+- `convweight::Array{T,2}`: convolutional weights
+- `bias::Array{T,2}`: additive bias (second dimension is always 1 because only learnable per-feature, not per-node)
+- `σ::F`: activation function (will be applied before `reg_norm` to outputs)
+"""
 struct AGNConv{T,F}
     selfweight::Array{T,2}
     convweight::Array{T,2}
@@ -33,10 +44,10 @@ Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux
 - `initW=glorot_uniform`: initialization function for weights
 - `initb=zeros`: initialization function for biases
 """
-function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros)
-    selfweight = Float32.(initW(ch[2], ch[1]))
-    convweight = Float32.(initW(ch[2], ch[1]))
-    b = Float32.(initb(ch[2], 1))
+function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
+    selfweight = T.(initW(ch[2], ch[1]))
+    convweight = T.(initW(ch[2], ch[1]))
+    b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
 end
 
@@ -72,7 +83,7 @@ end
 end
 
 """
-Custom pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux MeanPool.
+Custom pooling layer that outputs a fixed-length feature vector irrespective of input dimensions, for consistent handling of different-sized graphs feeding to fully-connected dense layers afterwards. Adapted from Flux's MeanPool.
 
 It accepts a pooling width and will adjust stride and/or padding such that the output vector length is correct.
 """

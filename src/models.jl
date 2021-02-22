@@ -1,7 +1,5 @@
 
 using Flux
-#include("layers.jl")
-#using .layers: AGNConv, AGNPool
 using AtomicGraphNets
 
 """

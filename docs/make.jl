@@ -5,6 +5,7 @@ makedocs(
 	modules = [AtomicGraphNets],
 	pages = Any[
 		"Home" => "index.md",
+		"GCNNs" => "gcnns.md",
 	]
 )
 deploydocs(

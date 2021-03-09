@@ -5,6 +5,7 @@ makedocs(
 	modules = [AtomicGraphNets],
 	pages = Any[
 		"Home" => "index.md",
+		"Basic Graph Theory" => "graph_theory.md",
 		"GCNNs" => "gcnns.md",
 		"Comparison with cgcnn.py" => "comparison.md",
 	]

@@ -6,6 +6,7 @@ makedocs(
 	pages = Any[
 		"Home" => "index.md",
 		"GCNNs" => "gcnns.md",
+		"Comparison with cgcnn.py" => "comparison.md",
 	]
 )
 deploydocs(

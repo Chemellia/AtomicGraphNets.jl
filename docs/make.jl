@@ -25,12 +25,12 @@ makedocs(
 	format = Documenter.HTML(
 		# Use clean URLs, unless built as a "local" build
 		prettyurls = !("local" in ARGS),
-		canonical = "https://thazhemadam.github.io/AtomicGraphNets.jl/stable/",	
+		canonical = "https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/",	
 	),
 	linkcheck = "linkcheck" in ARGS,
 )
 deploydocs(
-	repo = "github.com/thazhemadam/AtomicGraphNets.jl.git",
+	repo = "github.com/aced-differentiate/AtomicGraphNets.jl.git",
 	target = "build",
 	branch = "gh-pages",
 	push_preview = true

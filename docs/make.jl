@@ -19,6 +19,7 @@ makedocs(
 		"Comparison with cgcnn.py" => "comparison.md",
 		"Examples" => Any[
 			"Example 1" => "examples/example_1.md",
+			"Example 2" => "examples/example_2.md",
 		]
 	],
 	format = Documenter.HTML(

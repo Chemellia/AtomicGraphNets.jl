@@ -1,7 +1,9 @@
 using Test
 using ChemistryFeaturization
+using SimpleWeightedGraphs
 
 include("../src/layers.jl")
+using .layers: AGNConv, AGNPool
 
 @testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones
@@ -51,4 +53,7 @@ end
     add_features!(ag, feat, dummyfzn)
     @test all(isapprox.(meanpool(ag), 14/15))
     @test all(maxpool(ag) .== 2.0)
+
+    # make sure it complains when it should
+    @test_throws AssertionError AGNPool("mean", 10, 20, 0.5)
 end

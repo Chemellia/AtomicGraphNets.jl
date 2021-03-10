@@ -17,6 +17,9 @@ makedocs(
 		"Basic Graph Theory" => "graph_theory.md",
 		"GCNNs" => "gcnns.md",
 		"Comparison with cgcnn.py" => "comparison.md",
+		"Examples" => Any[
+			"Example 1" => "examples/example_1.md",
+		]
 	],
 	format = Documenter.HTML(
 		# Use clean URLs, unless built as a "local" build

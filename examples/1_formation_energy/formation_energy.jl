@@ -18,7 +18,7 @@ num_epochs = 5 # how many epochs to train?
 num_train = Int32(round(train_frac * num_pts))
 num_test = num_pts - num_train
 prop = "formation_energy_per_atom"
-datadir = "../../MP_data/"
+datadir = "$(@__DIR__)/data/"
 id = "task_id" # field by which to label each input material
 
 # atom featurization, pretty arbitrary choices for now
@@ -66,7 +66,7 @@ train_data = zip(train_input, train_output)
 
 # build the model
 println("Building the network...")
-model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, num_hidden_layers=1)
+model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, pooled_feature_length=(Int(crys_fea_len/2)), num_hidden_layers=1)
 
 # define loss function and a callback to monitor progress
 loss(x,y) = Flux.mse(model(x), y)

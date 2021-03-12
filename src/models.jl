@@ -48,4 +48,8 @@ function build_SGCNN(input_feature_length::Integer; num_conv=2, conv_activation=
     bulk_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))
     surface_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))
     model = Chain(graphs->slab_graph_layer(graphs[1], bulk_model, graphs[2], surface_model), Dense(2*pooled_feature_length, hidden_layer_width, hidden_layer_activation, initW=initW), [Dense(hidden_layer_width, hidden_layer_width, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(hidden_layer_width, output_length, output_layer_activation, initW=initW))
+<<<<<<< HEAD
 end
+=======
+end
+>>>>>>> 14e39047ce8abd34f8a1a5692169371ae22397ae

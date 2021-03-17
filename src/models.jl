@@ -1,5 +1,6 @@
 using Flux
 using Flux:glorot_uniform
+using ChemistryFeaturization
 using AtomicGraphNets
 
 """

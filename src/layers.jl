@@ -17,15 +17,23 @@ function reg_norm(x::AbstractArray, ϵ=sqrt(eps(Float32)))
 end
 
 """
-    AGNConv{T,F}
+    AGNConv(in=>out)
 
-An AtomicGraphNets convolutional layer.
+Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original AGNN structure, so explicitly has self and convolutional weights separately.
 
 # Fields
 - `selfweight::Array{T,2}`: weights applied to features at a node
 - `convweight::Array{T,2}`: convolutional weights
 - `bias::Array{T,2}`: additive bias (second dimension is always 1 because only learnable per-feature, not per-node)
-- `σ::F`: activation function (will be applied before `reg_norm` to outputs)
+- `σ::F`: activation function (will be applied before `reg_norm` to outputs), defaults to softplus
+
+# Arguments
+- `in::Integer`: the dimension of input features.
+- `out::Integer`: the dimension of output features.
+- `σ=softplus`: activation function
+- `initW=glorot_uniform`: initialization function for weights
+- `initb=zeros`: initialization function for biases
+
 """
 struct AGNConv{T,F}
     selfweight::Array{T,2}
@@ -34,18 +42,6 @@ struct AGNConv{T,F}
     σ::F
 end
 
-"""
-    AGNConv(in=>out)
-
-Atomic graph convolutional layer. Almost identical to GCNConv from GeometricFlux but adapted to be most similar to Tian's original AGNN structure, so explicitly has self and convolutional weights separately. Default activation function is softplus.
-
-# Arguments
-- `in::Integer`: the dimension of input features.
-- `out::Integer`: the dimension of output features.
-- `σ=softplus`: activation function
-- `initW=glorot_uniform`: initialization function for weights
-- `initb=zeros`: initialization function for biases
-"""
 function AGNConv(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32)
     selfweight = T.(initW(ch[2], ch[1]))
     convweight = T.(initW(ch[2], ch[1]))

@@ -1,5 +1,5 @@
-
 using Flux
+using Flux:glorot_uniform
 using AtomicGraphNets
 
 """

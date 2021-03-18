@@ -2,7 +2,7 @@ Manifest.toml
 *~
 playing.jl
 */api_key_is*
-data/*
+data
 data/formation_energy_per_atom_ellists/
 data/formation_energy_per_atom_graphs/
 data/*/*.cif
@@ -13,3 +13,4 @@ Icon*
 */Icon*
 */*/Icon*
 build
+*.jls

@@ -54,7 +54,7 @@ println("Building graphs and feature vectors from structures...")
 inputs = AtomGraph[]
 
 # build the graphs
-build_graphs_batch(xyz_dir, graph_dir)
+build_graphs_batch(xyz_dir; output_folder = graph_dir)
 
 for r in eachrow(info)
     graph_path = joinpath(graph_dir, string(r.mol_id, ".jls"))

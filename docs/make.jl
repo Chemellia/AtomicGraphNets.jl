@@ -1,3 +1,5 @@
+using Pkg
+Pkg.activate(".")
 using Documenter, AtomicGraphNets
 
 # The DOCSARGS environment variable can be used to pass additional arguments to make.jl.

@@ -35,6 +35,7 @@ makedocs(
 deploydocs(
 	repo = "github.com/aced-differentiate/AtomicGraphNets.jl.git",
 	target = "build",
-	branch = "gh-pages",
+        branch = "gh-pages",
+        devbranch = "main",
 	push_preview = true
 )

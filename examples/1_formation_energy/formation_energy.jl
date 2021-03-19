@@ -69,7 +69,7 @@ println("Building the network...")
 model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, pooled_feature_length=(Int(crys_fea_len/2)), num_hidden_layers=1)
 
 # define loss function and a callback to monitor progress
-loss(x,y) = Flux.mse(model(x), y)
+loss(x,y) = Flux.Losses.mse(model(x), y)
 evalcb() = @show(mean(loss.(test_input, test_output)))
 evalcb()
 

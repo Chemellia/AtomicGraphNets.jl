@@ -23,7 +23,8 @@ makedocs(
 		"Example 2" => "examples/example_2.md"],
             "Functions"                => Any[
                 "Layers"    => "functions/layers.md",
-                "Models"    => "functions/models.md"]
+                "Models"    => "functions/models.md"],
+            "Changelog"                => "changelog.md"
 	],
 	format = Documenter.HTML(
 		# Use clean URLs, unless built as a "local" build

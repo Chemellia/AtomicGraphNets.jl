@@ -1,3 +1,5 @@
 [deps]
-AtomicGraphNets = "ccdf130a-3c88-4595-a023-a7e7f78b9dd5"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[compat]
+Documenter = "~0.26"

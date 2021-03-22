@@ -35,7 +35,12 @@ Join(combine, paths) = Parallel(combine, paths)
 Join(combine, paths...) = Join(combine, paths)
 
 """
-Build a slab graph network. For now, fixing both "parallel" convolutional paths to have same hyperparams for simplicity. Might relax this later.
+Build a slab graph network, based off of Kim et al. 2020: https://pubs.acs.org/doi/10.1021/acs.chemmater.9b03686
+
+For now, fixing both "parallel" convolutional paths to have same hyperparams for simplicity and to basically be copies of CGCNN. Might relax this later.
+
+# Arguments:
+Same as [`build_CGCNN`](@ref) except for additional parameter of `hidden_layer_width`
 """
 function build_SGCNN(input_feature_length::Integer; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, hidden_layer_width=40, num_hidden_layers=3, hidden_layer_activation=softplus, output_layer_activation=identity, output_length=1, initW=glorot_uniform)
     bulk_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))

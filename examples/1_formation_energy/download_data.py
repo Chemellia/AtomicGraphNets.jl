@@ -1,4 +1,4 @@
-from pymatgen import MPRester
+from pymatgen.ext.matproj import MPRester
 import pandas as pd
 import os
 from os import path
@@ -6,14 +6,20 @@ import sys
 
 id = "task_id"
 prop = "formation_energy_per_atom"
-data_dir = "../../data/"
+dir_path = path.dirname(path.realpath(__file__))
+data_dir = dir_path + "/data/"
+
+# create a ./data folder if it doesn't already exist
+if not path.isdir(data_dir):
+    os.mkdir(data_dir)
+
 cif_folder = data_dir + prop + "_cifs/"
 csv_path = data_dir + prop + ".csv"
 api_key = sys.argv[1]
 
 m = MPRester(api_key=api_key)
 
-# skipping radioactive stuff and noble gases
+# skip radioactive elements and noble gases
 elements = ["H", "Li", "Be", "B", "C", "N", "O", "F", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi"]
 
 # query for property data of stable, ordered materials
@@ -36,7 +42,7 @@ df = df.drop(["cif", "elements"], axis=1)
 df.to_csv(csv_path, index=False)
 
 # write cifs
-if not path.exists(cif_folder):
+if not path.isdir(cif_folder):
     os.mkdir(cif_folder)
 
 for d in data:

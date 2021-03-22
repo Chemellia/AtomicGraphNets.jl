@@ -29,7 +29,19 @@ function build_CGCNN(input_feature_length; num_conv=2, conv_activation=softplus,
     model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width), [Dense(pooled_feature_length, pooled_feature_length, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(pooled_feature_length, output_length, output_layer_activation, initW=initW))
 end
 
-## TODO: potentially make stuff to automatically "cleave" a bulk + adsorbate structure to build the two slab graph inputs from one
+
+# when Flux v0.12 is released, remove helper function below and instead uncomment these:
+# copied from https://fluxml.ai/Flux.jl/dev/models/advanced/
+#struct Join{T, F}
+#  combine::F
+#  paths::T
+#end
+# allow Join(op, m1, m2, ...) as a constructor
+#Join(combine, paths...) = Join(combine, paths)
+
+#Flux.@functor Join
+#Join(combine, paths) = Parallel(combine, paths)
+#Join(combine, paths...) = Join(combine, paths)
 
 """
 This is a helper function to the main model builder below. Takes in the inputs and models for the two "parallel" CGCNN-like models at the start of the SGCNN architecture and outputs the concatenated final result.
@@ -54,5 +66,7 @@ function build_SGCNN(input_feature_length::Integer; num_conv=2, conv_activation=
     bulk_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))
     surface_model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width))
     model = Chain(graphs->slab_graph_layer(graphs[1], bulk_model, graphs[2], surface_model), Dense(2*pooled_feature_length, hidden_layer_width, hidden_layer_activation, initW=initW), [Dense(hidden_layer_width, hidden_layer_width, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(hidden_layer_width, output_length, output_layer_activation, initW=initW))
+    # when Flux v0.12 is out, use this instead of line above
+    #model = Chain(Join(vcat, surface_model, bulk_model), Dense(2*pooled_feature_length, hidden_layer_width, hidden_layer_activation, initW=initW), [Dense(hidden_layer_width, hidden_layer_width, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(hidden_layer_width, output_length, output_layer_activation, initW=initW))
 end
 

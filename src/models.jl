@@ -24,7 +24,7 @@ Network has convolution layers, then pooling to some fixed length, followed by D
 - `output_length::Integer`: length of output vector
 - `initW::F`: function to use to initialize weights in trainable layers
 """
-function Xie_model(input_feature_length; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, num_hidden_layers=1, hidden_layer_activation=softplus, output_layer_activation=identity, output_length=1, initW=glorot_uniform)
+function build_CGCNN(input_feature_length; num_conv=2, conv_activation=softplus, atom_conv_feature_length=80, pool_type="mean", pool_width=0.1, pooled_feature_length=40, num_hidden_layers=1, hidden_layer_activation=softplus, output_layer_activation=identity, output_length=1, initW=glorot_uniform)
     @assert atom_conv_feature_length >= pooled_feature_length "Feature length after pooling must be <= feature length before pooling!"
     model = Chain(AGNConv(input_feature_length=>atom_conv_feature_length, conv_activation, initW=initW), [AGNConv(atom_conv_feature_length=>atom_conv_feature_length, conv_activation, initW=initW) for i in 1:num_conv-1]..., AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width), [Dense(pooled_feature_length, pooled_feature_length, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(pooled_feature_length, output_length, output_layer_activation, initW=initW))
 end

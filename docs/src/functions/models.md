@@ -5,5 +5,6 @@ Pages=["models.md"]
 ```
 
 ```@docs
-Xie_model
+build_CGCNN
+build_SGCNN
 ```

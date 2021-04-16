@@ -4,7 +4,7 @@
 
 AtomicGraphNets.jl implements graph-based models for machine learning on atomic systems, such as [Crystal Graph Convolutional Neural Nets](https://arxiv.org/abs/1710.10324), in Julia. It makes use of the [Flux](https://fluxml.ai) ecosystem for model building and the [JuliaGraphs](https://github.com/JuliaGraphs) ecosystem for graph representation and visualization, as well as adapting some features from [GeometricFlux](https://github.com/yuehhua/GeometricFlux.jl).
 
-Documentation is in progress [over here](https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/).
+Documentation is in progress [over here](https://aced-differentiate.github.io/AtomicGraphNets.jl/dev/).
 
 ## Getting Started
 

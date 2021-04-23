@@ -12,10 +12,8 @@ Documentation is in progress [over here](https://aced-differentiate.github.io/At
 
 2. Go and try out the example in examples/example1/ – it has its own README file with detailed instructions.
 
-* more network architectures (see issues for some ideas)
-
-## Contact
-Please feel free to fork and play, and reach out here on GitHub or to rkurchin [at] cmu [dot] edu with suggestions, etc.!
+## Contributing
+We welcome community contributions! Please refer to [contribution guide](CONTRIBUTING.md) for suggestions on how to go about things.
 
 ## Acknowledgements
 Many thanks to [Dhairya Gandhi](https://github.com/DhairyaLGandhi) for helping out with some adjoints to actually make these layers trainable! :D

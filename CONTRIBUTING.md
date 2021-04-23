@@ -8,6 +8,14 @@ Thanks to the [OpenMM contribution guide](https://github.com/openmm/openmm/blob/
 
 ## Guidelines
 
+* Commit frequently and make the commit messages detailed! Ideally specifying directory/file as well as nature of changes. A sample commit message format could be:
+```
+directory of file affected: changes introduced
+
+...commit message explicitly stating the changes made. this should be concise, and crisp enough, that the maintainers must be able to understand the changes this commit introduces without having to go through the diff-logs... 
+
+Signed-off/Co-authored with/Suggested-by messages for credit where it's due
+```
 * In general, unless a change is very minor (e.g. fixing a typo), open an issue before opening a pull request that fixes that issue. This allows open discussion, collaboration, and prioritization of changes to the code. Please also label the issue appropriately. We use a set of labels that is slightly expanded from the [GitHub standard set](https://docs.github.com/en/github/managing-your-work-on-github/managing-labels#about-default-labels):
 
 | Label              | Description                                                                                                                    |

@@ -10,20 +10,20 @@ Thanks to the [OpenMM contribution guide](https://github.com/openmm/openmm/blob/
 
 * In general, unless a change is very minor (e.g. fixing a typo), open an issue before opening a pull request that fixes that issue. This allows open discussion, collaboration, and prioritization of changes to the code. Please also label the issue appropriately. We use a set of labels that is slightly expanded from the [GitHub standard set](https://docs.github.com/en/github/managing-your-work-on-github/managing-labels#about-default-labels):
 
-| Label              | Description                                                                                                                 |
-| -------------      | -------------                                                                                                               |
-| `breaking`         | Indicates a pull request that introduces breaking changes                                                                   |
-| `bug`              | Indicates an unexpected problem or unintended behavior                                                                      |
-| `documentation`    | Indicates a need for improvements or additions to documentation                                                             |
-| `duplicate`        | Indicates similar issues or pull requests                                                                                   |
-| `enhancement`      | Indicates new feature requests                                                                                              |
-| `good first issue` | Indicates a good issue for first-time contributors                                                                          |
-| `help wanted`      | Indicates that a maintainer wants help on an issue or pull request                                                          |
-| `invalid`          | Indicates that an issue or pull request is no longer relevant                                                               |
-| `longterm`         | Indicates a feature that we intend to implement, but is not high-priority right now (generally only be used by maintainers) |
-| `priority`         | Indicates an issue that is high-priority (generally only be used by maintainers)                                            |
-| `question`         | Indicates that an issue or pull request needs more information                                                              |
-| `wontfix`          | Indicates that work won't continue on an issue or pull request                                                              |
+| Label              | Description                                                                                                                    |
+| -------------      | -------------                                                                                                                  |
+| `breaking`         | Indicates a pull request that introduces breaking changes                                                                      |
+| `bug`              | Indicates an unexpected problem or unintended behavior                                                                         |
+| `documentation`    | Indicates a need for improvements or additions to documentation                                                                |
+| `duplicate`        | Indicates similar issues or pull requests                                                                                      |
+| `enhancement`      | Indicates new feature requests                                                                                                 |
+| `good first issue` | Indicates a good issue for first-time contributors                                                                             |
+| `help wanted`      | Indicates that a maintainer wants help on an issue or pull request                                                             |
+| `invalid`          | Indicates that an issue or pull request is no longer relevant                                                                  |
+| `longterm`         | Indicates a feature that we intend to implement, but is not high-priority right now (generally only to be used by maintainers) |
+| `priority`         | Indicates an issue that is high-priority (generally only to be used by maintainers)                                            |
+| `question`         | Indicates that an issue or pull request needs more information                                                                 |
+| `wontfix`          | Indicates that work won't continue on an issue or pull request                                                                 |
 
 * If you are adding/changing features, make sure to add/update tests (DO NOT comment out tests!) and documentation accordingly! Ideally, if relevant, include example usage.
 * Keep things modular! If you are fixing/adding multiple things, do so via separate issues/PR's to streamline review and merging.

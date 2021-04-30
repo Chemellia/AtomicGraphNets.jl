@@ -1,6 +1,9 @@
 #=
  Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
+using Pkg
+Pkg.activate("./")
+Pkg.activate("../../")
 using CSV, DataFrames
 using Random, Statistics
 using Flux
@@ -50,6 +53,7 @@ inputs = AtomGraph[]
 
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
+    #println(cifpath)
     gr = build_graph(cifpath)
     feature_mat = hcat([atom_feature_vecs[e] for e in gr.elements]...)
     add_features!(gr, feature_mat, featurization)
@@ -66,7 +70,7 @@ train_data = zip(train_input, train_output)
 
 # build the model
 println("Building the network...")
-model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, pooled_feature_length=(Int(crys_fea_len/2)), num_hidden_layers=1)
+model = build_CGCNN(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, pooled_feature_length=(Int(crys_fea_len/2)), num_hidden_layers=1)
 
 # define loss function and a callback to monitor progress
 loss(x,y) = Flux.Losses.mse(model(x), y)

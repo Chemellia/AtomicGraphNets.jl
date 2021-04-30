@@ -29,6 +29,7 @@ Signed-off/Co-authored with/Suggested-by messages for credit where it's due
 | `help wanted`      | Indicates that a maintainer wants help on an issue or pull request                                                             |
 | `invalid`          | Indicates that an issue or pull request is no longer relevant                                                                  |
 | `longterm`         | Indicates a feature that we intend to implement, but is not high-priority right now (generally only to be used by maintainers) |
+| `performance`      | Indicates an issue/PR to improve code performance.                                                                             |
 | `priority`         | Indicates an issue that is high-priority (generally only to be used by maintainers)                                            |
 | `question`         | Indicates that an issue or pull request needs more information                                                                 |
 | `wontfix`          | Indicates that work won't continue on an issue or pull request                                                                 |

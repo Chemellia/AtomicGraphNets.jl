@@ -30,6 +30,7 @@ function build_CGCNN(input_feature_length; num_conv=2, conv_activation=softplus,
 end
 
 # copied from https://fluxml.ai/Flux.jl/dev/models/advanced/
+Flux.@functor Join
 Join(combine, paths) = Parallel(combine, paths)
 Join(combine, paths...) = Join(combine, paths)
 

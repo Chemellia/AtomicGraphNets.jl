@@ -36,7 +36,7 @@ Signed-off/Co-authored with/Suggested-by messages for credit where it's due
 
 * If you are adding/changing features, make sure to add/update tests (DO NOT comment out tests!) and documentation accordingly! Ideally, if relevant, include example usage.
 * Keep things modular! If you are fixing/adding multiple things, do so via separate issues/PR's to streamline review and merging.
-* TODO: add style guide notes
+* It is recommended that you set up [JuliaFormatter](https://domluna.github.io/JuliaFormatter.jl/dev/) (also see [VSCode extension](https://marketplace.visualstudio.com/items?itemName=singularitti.vscode-julia-formatter)). A GitHub action will check that code adheres to the style guide.
 
 ## Getting Started
 

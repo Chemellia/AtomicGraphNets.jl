@@ -21,7 +21,6 @@ bulk_graphs_files = readdir(bulk_graph_dir, join=true)
 surf_graphs_files = readdir(graph_dir, join=true)
 
 # read in the graphs
-=======
 using CSV, DataFrames
 using Statistics
 
@@ -115,4 +114,3 @@ evalcb()
 println("Training!")
 #Flux.train!(loss, params(model), train_data, opt)
 @epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
->>>>>>> 14e39047ce8abd34f8a1a5692169371ae22397ae

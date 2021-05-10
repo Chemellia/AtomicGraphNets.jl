@@ -72,11 +72,12 @@ train_data = zip(train_input, train_output)
 # build the model
 println("Building the network...")
 model = build_CGCNN(
-    num_features, 
-    num_conv = num_conv, 
-    atom_conv_feature_length = crys_fea_len, 
-    pooled_feature_length = (Int(crys_fea_len / 2)), 
-    num_hidden_layers = 1)
+    num_features,
+    num_conv = num_conv,
+    atom_conv_feature_length = crys_fea_len,
+    pooled_feature_length = (Int(crys_fea_len / 2)),
+    num_hidden_layers = 1,
+)
 
 # define loss function and a callback to monitor progress
 loss(x, y) = Flux.Losses.mse(model(x), y)

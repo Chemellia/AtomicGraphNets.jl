@@ -115,4 +115,3 @@ evalcb()
 println("Training!")
 #Flux.train!(loss, params(model), train_data, opt)
 @epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
->>>>>>> 14e39047ce8abd34f8a1a5692169371ae22397ae

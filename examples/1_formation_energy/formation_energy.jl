@@ -27,7 +27,8 @@ num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
 # returns actual vectors (in a dict with keys of elements) plus Vector of AtomFeat objects describing featurization metadata
-atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
+atom_feature_vecs, featurization =
+    make_feature_vectors(features, nbins = num_bins, logspaced = logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?
@@ -36,12 +37,12 @@ num_hidden_layers = 1 # how many fully-connected layers after convolution and po
 opt = ADAM(0.001) # optimizer
 
 # dataset...first, read in outputs
-info = CSV.read(string(datadir,prop,".csv"), DataFrame)
+info = CSV.read(string(datadir, prop, ".csv"), DataFrame)
 y = Array(Float32.(info[!, Symbol(prop)]))
 
 # shuffle data and pick out subset
-indices = shuffle(1:size(info,1))[1:num_pts]
-info = info[indices,:]
+indices = shuffle(1:size(info, 1))[1:num_pts]
+info = info[indices, :]
 output = y[indices]
 
 # next, make graphs and build input features (matrices of dimension (# features, # nodes))
@@ -66,13 +67,25 @@ train_data = zip(train_input, train_output)
 
 # build the model
 println("Building the network...")
-model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=crys_fea_len, pooled_feature_length=(Int(crys_fea_len/2)), num_hidden_layers=1)
+model = Xie_model(
+    num_features,
+    num_conv = num_conv,
+    atom_conv_feature_length = crys_fea_len,
+    pooled_feature_length = (Int(crys_fea_len / 2)),
+    num_hidden_layers = 1,
+)
 
 # define loss function and a callback to monitor progress
-loss(x,y) = Flux.Losses.mse(model(x), y)
+loss(x, y) = Flux.Losses.mse(model(x), y)
 evalcb() = @show(mean(loss.(test_input, test_output)))
 evalcb()
 
 # train
 println("Training!")
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 5))
+@epochs num_epochs Flux.train!(
+    loss,
+    params(model),
+    train_data,
+    opt,
+    cb = Flux.throttle(evalcb, 5),
+)

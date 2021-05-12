@@ -11,32 +11,31 @@ if haskey(ENV, "DOCSARGS")
 end
 
 makedocs(
-	sitename = "AtomicGraphNets.jl",
-	modules = [AtomicGraphNets],
-	pages = Any[
-	    "Home"                     => "index.md",
-	    "Basic Graph Theory"       => "graph_theory.md",
-	    "GCNNs"                    => "gcnns.md",
-	    "Comparison with cgcnn.py" => "comparison.md",
-	    "Examples"                 => Any[
-		"Example 1" => "examples/example_1.md",
-		"Example 2" => "examples/example_2.md"],
-            "Functions"                => Any[
-                "Layers"    => "functions/layers.md",
-                "Models"    => "functions/models.md"],
-            "Changelog"                => "changelog.md"
-	],
-	format = Documenter.HTML(
-		# Use clean URLs, unless built as a "local" build
-		prettyurls = !("local" in ARGS),
-		canonical = "https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/",	
-	),
-	linkcheck = "linkcheck" in ARGS,
+    sitename = "AtomicGraphNets.jl",
+    modules = [AtomicGraphNets],
+    pages = Any[
+        "Home"=>"index.md",
+        "Basic Graph Theory"=>"graph_theory.md",
+        "GCNNs"=>"gcnns.md",
+        "Comparison with cgcnn.py"=>"comparison.md",
+        "Examples"=>Any[
+            "Example 1"=>"examples/example_1.md",
+            "Example 2"=>"examples/example_2.md",
+        ],
+        "Functions"=>Any["Layers"=>"functions/layers.md", "Models"=>"functions/models.md"],
+        "Changelog"=>"changelog.md",
+    ],
+    format = Documenter.HTML(
+        # Use clean URLs, unless built as a "local" build
+        prettyurls = !("local" in ARGS),
+        canonical = "https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/",
+    ),
+    linkcheck = "linkcheck" in ARGS,
 )
 deploydocs(
-	repo = "github.com/aced-differentiate/AtomicGraphNets.jl.git",
-	target = "build",
-        branch = "gh-pages",
-        devbranch = "main",
-	push_preview = true
+    repo = "github.com/aced-differentiate/AtomicGraphNets.jl.git",
+    target = "build",
+    branch = "gh-pages",
+    devbranch = "main",
+    push_preview = true,
 )

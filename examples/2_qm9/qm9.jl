@@ -34,7 +34,8 @@ num_bins = [18, 9, 4, 16, 10, 10]
 num_features = sum(num_bins) # we'll use this later
 logspaced = [false, false, false, true, true, false]
 # returns actual vectors (in a dict with keys of elements) plus Vector of AtomFeat objects describing featurization metadata
-atom_feature_vecs, featurization = make_feature_vectors(features, nbins=num_bins, logspaced=logspaced)
+atom_feature_vecs, featurization =
+    make_feature_vectors(features, nbins = num_bins, logspaced = logspaced)
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 5 # how many convolutional layers?
@@ -45,8 +46,8 @@ num_hidden_layers = 2 # how many fully-connected layers after convolution and po
 opt = ADAM(0.003) # optimizer
 
 # shuffle data and pick out subset
-indices = shuffle(1:size(info,1))[1:num_pts]
-info = info[indices,:]
+indices = shuffle(1:size(info, 1))[1:num_pts]
+info = info[indices, :]
 output = y[indices]
 
 # next, make graphs and build input features (matrices of dimension (# features, # nodes))
@@ -74,14 +75,27 @@ train_data = zip(train_input, train_output)
 
 # build the model
 println("Building the network...")
-model = Xie_model(num_features, num_conv=num_conv, atom_conv_feature_length=atom_fea_len, pool_type=pool_type, pooled_feature_length=crys_fea_len, num_hidden_layers=num_hidden_layers)
+model = Xie_model(
+    num_features,
+    num_conv = num_conv,
+    atom_conv_feature_length = atom_fea_len,
+    pool_type = pool_type,
+    pooled_feature_length = crys_fea_len,
+    num_hidden_layers = num_hidden_layers,
+)
 
 # define loss function
-loss(x,y) = Flux.Losses.mse(model(x), y)
+loss(x, y) = Flux.Losses.mse(model(x), y)
 # and a callback to see training progress
 evalcb() = @show(mean(loss.(test_input, test_output)))
 evalcb()
 
 # train
 println("Training!")
-@epochs num_epochs Flux.train!(loss, params(model), train_data, opt, cb = Flux.throttle(evalcb, 10))
+@epochs num_epochs Flux.train!(
+    loss,
+    params(model),
+    train_data,
+    opt,
+    cb = Flux.throttle(evalcb, 10),
+)

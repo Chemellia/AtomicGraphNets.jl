@@ -8,7 +8,7 @@ Documentation is in progress [over here](https://aced-differentiate.github.io/At
 
 ## Getting Started
 
-1. To install the latest tagged version, in your Julia REPL, do `]install AtomicGraphNets`. However, you can also play with the latest version on the `main` branch by skipping to step 2 and then doing `]install /path/to/repo` where you replace the dummy path with the location of your clone.
+1. To install the latest tagged version, in your Julia REPL, do `]add AtomicGraphNets`. However, you can also play with the latest version on the `main` branch by skipping to step 2 and then doing `]add /path/to/repo` where you replace the dummy path with the location of your clone.
 
 2. Clone this package to wherever you want to play.
 

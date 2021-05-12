@@ -40,4 +40,12 @@ Signed-off/Co-authored with/Suggested-by messages for credit where it's due
 
 ## Getting Started
 
-Coming...
+We welcome contributions of well-written code from folks with all levels of software engineering experience! There are a TON of great guides out there for all aspects of collaborative development, so rather than reinventing the wheel, here are a few starting points for common things folks need/want to learn:
+
+* [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/): An awesome high-level introduction covering philosophy, communication, and some best practices, and including links to other more detailed resources.
+
+* [`first-contributions`](https://github.com/firstcontributions/first-contributions): A GitHub project designed to walk beginners through making a first contribution!
+
+* [Resources to learn Git](https://try.github.io) compiled by GitHub.
+
+* Is something missing here? Open a PR to add it! :slightly_smiling_face:

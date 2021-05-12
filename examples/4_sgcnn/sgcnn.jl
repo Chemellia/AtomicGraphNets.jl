@@ -10,7 +10,6 @@ using Random
 using ChemistryFeaturization
 using AtomicGraphNets
 using Serialization
-<< << << < HEAD
 
 #cd(@__DIR__)
 

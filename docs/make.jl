@@ -29,6 +29,7 @@ makedocs(
         # Use clean URLs, unless built as a "local" build
         prettyurls = !("local" in ARGS),
         canonical = "https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/",
+        edit_link = "main",
     ),
     linkcheck = "linkcheck" in ARGS,
 )

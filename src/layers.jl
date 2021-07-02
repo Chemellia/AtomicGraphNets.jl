@@ -1,4 +1,4 @@
-module layers
+module Layers
 
 using Flux
 using Flux: glorot_uniform, @functor#, destructure
@@ -84,7 +84,8 @@ function (l::AGNConv)(lapl::Matrix{<:Real}, X::Matrix{<:Real})
 end
 
 # alternate signature so FeaturizedAtoms can be fed into first layer
-(l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) = l(a.atoms.laplacian, a.encoded_features)
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) =
+    l(a.atoms.laplacian, a.encoded_features)
 
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}

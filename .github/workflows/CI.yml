@@ -38,7 +38,7 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
-	  token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
       - name: Format code
         if: ${{ matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request' && matrix.julia-arch == 'x86' }}
         run: |

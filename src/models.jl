@@ -58,10 +58,10 @@ function build_CGCNN(
                 pooled_feature_length,
                 pooled_feature_length,
                 hidden_layer_activation,
-                initW = initW,
+                init = initW,
             ) for i = 1:num_hidden_layers-1
         ]...,
-        Dense(pooled_feature_length, output_length, output_layer_activation, initW = initW),
+        Dense(pooled_feature_length, output_length, output_layer_activation, init = initW),
     )
 end
 
@@ -154,17 +154,17 @@ function build_SGCNN(
             2 * pooled_feature_length,
             hidden_layer_width,
             hidden_layer_activation,
-            initW = initW,
+            init = initW,
         ),
         [
             Dense(
                 hidden_layer_width,
                 hidden_layer_width,
                 hidden_layer_activation,
-                initW = initW,
+                init = initW,
             ) for i = 1:num_hidden_layers-1
         ]...,
-        Dense(hidden_layer_width, output_length, output_layer_activation, initW = initW),
+        Dense(hidden_layer_width, output_length, output_layer_activation, init = initW),
     )
     # when Flux v0.12 is out, use this instead of line above
     #model = Chain(Join(vcat, surface_model, bulk_model), Dense(2*pooled_feature_length, hidden_layer_width, hidden_layer_activation, initW=initW), [Dense(hidden_layer_width, hidden_layer_width, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(hidden_layer_width, output_length, output_layer_activation, initW=initW))

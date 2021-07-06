@@ -87,6 +87,9 @@ end
 (l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) =
     l(a.atoms.laplacian, a.encoded_features)
 
+# signature to splat appropriately
+(l::AGNConv)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = l(t...)
+
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
     SparseMatrixCSC{T,N}(arr), Δ -> (collect(Δ),)
@@ -187,8 +190,9 @@ function (m::AGNPool)(feat::Matrix{<:Real})
     mean(m.pool_func(x, pdims), dims = 2)[:, :, 1, 1]
 end
 
-# alternate signature so it can take output directly from AGNConv layer
+# alternate signatures so it can take output directly from AGNConv layer
 (m::AGNPool)(lapl::Matrix{<:Real}, out_mat::Matrix{<:Real}) = m(out_mat)
+(m::AGNPool)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = m(t[2])
 
 # following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
 """

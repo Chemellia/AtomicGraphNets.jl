@@ -28,7 +28,7 @@ using SimpleWeightedGraphs
     @test size(model[5].W) == (1, pool_fea_len)
 
     # check that it evaluates to the right things, basically
-    dummyfzn = GraphNodeFeaturization(["X" for i in 1:40], nbins=1) # cheeky way to get a matrix of all ones
+    dummyfzn = GraphNodeFeaturization(["X" for i = 1:40], nbins = 1) # cheeky way to get a matrix of all ones
     ag = AtomGraph(Float32.([0 1; 1 0]), ["H", "O"])
     input = featurize(ag, dummyfzn)
     lapl, output1 = model[1](input)

@@ -24,7 +24,7 @@ using .Layers: AGNConv, AGNPool
     adjmat = Float32.([0 1 1; 1 0 1; 1 1 0])
     ag = Atoms.AtomGraph(adjmat, ["C", "C", "C"])
     fa = featurize(ag, dummyfzn)
-    @test all(isapprox.(l(fa)[2], zero(Float32), atol=1e-12))
+    @test all(isapprox.(l(fa)[2], zero(Float32), atol = 1e-12))
 end
 
 @testset "pooling" begin

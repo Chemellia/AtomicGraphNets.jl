@@ -65,8 +65,8 @@ end
 
 # Note
 In the case of providing two matrices, the following conditions must hold:
-- lapl must be square and of dimension N x N where N is the number of nodes in the graph
-- X must be of dimension M x N, where M is `size(l.convweight)[2]` (or equivalently, `size(l.selfweight)[2]`)
+- `lapl` must be square and of dimension N x N where N is the number of nodes in the graph
+- `X` (encoded features) must be of dimension M x N, where M is `size(l.convweight)[2]` (or equivalently, `size(l.selfweight)[2]`)
 """
 function (l::AGNConv)(lapl::Matrix{<:Real}, X::Matrix{<:Real})
     # should we put dimension checks here? Could allow more informative errors, but would likely introduce performance penalty. For now it's just in docstring.
@@ -209,16 +209,16 @@ end
 # need it in the form f(u,p,t) (but t doesn't matter)
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
-function (l::AGNConvDEQ)(gr::AtomGraph)
+function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     p,re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
-    guess = l.conv(gr).encoded_features
+    guess = l.conv(gr)[2]
 
     f = function (dfeat,feat,p,t)
         input = gr
         input.encoded_features = reshape(feat,size(guess))
         output = re(p)(input)
-        dfeat .= vec(output.encoded_features) .- vec(input.encoded_features)
+        dfeat .= vec(output[2]) .- vec(input.encoded_features)
     end
 
     prob = SteadyStateProblem{true}(f, vec(guess), p)

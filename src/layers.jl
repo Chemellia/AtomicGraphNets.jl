@@ -1,4 +1,4 @@
-module layers
+module Layers
 
 using Flux
 using Flux: glorot_uniform, @functor#, destructure
@@ -61,11 +61,15 @@ end
  Define action of layer on inputs: do a graph convolution, add this (weighted by convolutional weight) to the features themselves (weighted by self weight) and the per-feature bias (concatenated to match number of nodes in graph).
 
 # Arguments
-- input: AtomGraph object
+- input: a FeaturizedAtoms object, or graph_laplacian, encoded_features
+
+# Note
+In the case of providing two matrices, the following conditions must hold:
+- `lapl` must be square and of dimension N x N where N is the number of nodes in the graph
+- `X` (encoded features) must be of dimension M x N, where M is `size(l.convweight)[2]` (or equivalently, `size(l.selfweight)[2]`)
 """
-function (l::AGNConv)(ag::AtomGraph)
-    lapl = ag.lapl
-    X = ag.features
+function (l::AGNConv)(lapl::Matrix{<:Real}, X::Matrix{<:Real})
+    # should we put dimension checks here? Could allow more informative errors, but would likely introduce performance penalty. For now it's just in docstring.
     out_mat =
         Float32.(
             reg_norm(
@@ -76,8 +80,15 @@ function (l::AGNConv)(ag::AtomGraph)
                 ),
             ),
         )
-    AtomGraph(ag.graph, ag.elements, ag.lapl, out_mat, AtomFeat[], ag.id)
+    lapl, out_mat
 end
+
+# alternate signature so FeaturizedAtoms can be fed into first layer
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) =
+    l(a.atoms.laplacian, a.encoded_features)
+
+# signature to splat appropriately
+(l::AGNConv)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = l(t...)
 
 # fixes from Dhairya so backprop works
 @adjoint function SparseMatrixCSC{T,N}(arr) where {T,N}
@@ -170,15 +181,18 @@ function compute_pool_params(
     dim, str, pad
 end
 
-function (m::AGNPool)(ag::AtomGraph)
+function (m::AGNPool)(feat::Matrix{<:Real})
     # compute what pad and stride need to be...
-    x = ag.features
-    x = reshape(x, (size(x)..., 1, 1))
+    x = reshape(feat, (size(feat)..., 1, 1))
     # do mean pooling across feature direction, average across all nodes in graph
     # TODO: decide if this approach makes sense or if there's a smarter way
     pdims = PoolDims(x, (m.dim, 1); padding = (m.pad, 0), stride = (m.str, 1))
     mean(m.pool_func(x, pdims), dims = 2)[:, :, 1, 1]
 end
+
+# alternate signatures so it can take output directly from AGNConv layer
+(m::AGNPool)(lapl::Matrix{<:Real}, out_mat::Matrix{<:Real}) = m(out_mat)
+(m::AGNPool)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = m(t[2])
 
 # following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
 """
@@ -199,16 +213,16 @@ end
 # need it in the form f(u,p,t) (but t doesn't matter)
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
-function (l::AGNConvDEQ)(gr::AtomGraph)
+function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     p,re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
-    guess = l.conv(gr).features
+    guess = l.conv(gr)[2]
 
     f = function (dfeat,feat,p,t)
         input = gr
-        input.features = reshape(feat,size(guess))
+        input.encoded_features = reshape(feat,size(guess))
         output = re(p)(input)
-        dfeat .= vec(output.features) .- vec(input.features)
+        dfeat .= vec(output[2]) .- vec(input.encoded_features)
     end
 
     prob = SteadyStateProblem{true}(f, vec(guess), p)

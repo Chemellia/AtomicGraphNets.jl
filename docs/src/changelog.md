@@ -4,6 +4,10 @@ I'm generally trying to adhere to [semver](https://semver.org) here. This means 
 
 Categories to include for each release, if relevant: breaking, added, fixed, removed/deprecated
 
+## v0.1.3 [2021-07-09]
+### Breaking
+* now compatible with latest ChemistryFeaturization API
+
 ## v0.1.2 [2021-03-22]
 
 ### Added:

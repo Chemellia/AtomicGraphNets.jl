@@ -1,7 +1,7 @@
 name = "AtomicGraphNets"
 uuid = "ccdf130a-3c88-4595-a023-a7e7f78b9dd5"
 authors = ["Rachel Kurchin <rkurchin@cmu.edu>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

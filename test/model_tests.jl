@@ -43,3 +43,7 @@ using SimpleWeightedGraphs
     @test all(isapprox.(model[1:2](input)[2], zeros(Float32, 20, 2), atol = 2e-3))
     @test isapprox(model(input)[1], 6.9, atol = 3e-2)
 end
+
+@testset "SGCNN" begin
+
+end

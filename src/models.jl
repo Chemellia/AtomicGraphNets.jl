@@ -83,9 +83,9 @@ end
 This is a helper function to the main model builder below. Takes in the inputs and models for the two "parallel" CGCNN-like models at the start of the SGCNN architecture and outputs the concatenated final result.
 """
 function slab_graph_layer(
-    bulk_graph::AtomGraph,
+    bulk_graph::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization},
     bulk_model,
-    surface_graph::AtomGraph,
+    surface_graph::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization},
     surface_model,
 )
     bulk_output = bulk_model(bulk_graph)

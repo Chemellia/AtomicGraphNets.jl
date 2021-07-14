@@ -2,13 +2,11 @@
  Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
 using Pkg
-Pkg.activate("./")
 Pkg.activate("../../")
 using CSV, DataFrames
 using Random, Statistics
 using Flux
 using Flux: @epochs
-using SimpleWeightedGraphs
 using ChemistryFeaturization
 using AtomicGraphNets
 
@@ -24,14 +22,9 @@ prop = "formation_energy_per_atom"
 datadir = "$(@__DIR__)/data/"
 id = "task_id" # field by which to label each input material
 
-# atom featurization, pretty arbitrary choices for now
-features = Symbol.(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
-num_bins = [18, 9, 4, 16, 10, 10]
-num_features = sum(num_bins) # we'll use this later
-logspaced = [false, false, false, true, true, false]
-# returns actual vectors (in a dict with keys of elements) plus Vector of AtomFeat objects describing featurization metadata
-atom_feature_vecs, featurization =
-    make_feature_vectors(features, nbins = num_bins, logspaced = logspaced)
+# set up the featurization
+featurization = GraphNodeFeaturization(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
+num_features = sum(ChemistryFeaturization.FeatureDescriptor.output_shape.(featurization.features)) # TODO: update this with cleaner syntax once new version of CF is tagged that has it
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?
@@ -48,17 +41,15 @@ indices = shuffle(1:size(info, 1))[1:num_pts]
 info = info[indices, :]
 output = y[indices]
 
-# next, make graphs and build input features (matrices of dimension (# features, # nodes))
+# next, make and featurize graphs
 println("Building graphs and feature vectors from structures...")
-inputs = AtomGraph[]
+inputs = FeaturizedAtoms[]
 
 for r in eachrow(info)
     cifpath = string(datadir, prop, "_cifs/", r[Symbol(id)], ".cif")
-    #println(cifpath)
-    gr = build_graph(cifpath)
-    feature_mat = hcat([atom_feature_vecs[e] for e in gr.elements]...)
-    add_features!(gr, feature_mat, featurization)
-    push!(inputs, gr)
+    gr = AtomGraph(cifpath)
+    input = featurize(gr, featurization)
+    push!(inputs, input)
 end
 
 # pick out train/test sets

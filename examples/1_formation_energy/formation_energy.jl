@@ -23,8 +23,10 @@ datadir = "$(@__DIR__)/data/"
 id = "task_id" # field by which to label each input material
 
 # set up the featurization
-featurization = GraphNodeFeaturization(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
-num_features = sum(ChemistryFeaturization.FeatureDescriptor.output_shape.(featurization.features)) # TODO: update this with cleaner syntax once new version of CF is tagged that has it
+featurization =
+    GraphNodeFeaturization(["Group", "Row", "Block", "Atomic mass", "Atomic radius", "X"])
+num_features =
+    sum(ChemistryFeaturization.FeatureDescriptor.output_shape.(featurization.features)) # TODO: update this with cleaner syntax once new version of CF is tagged that has it
 
 # model hyperparameters – keeping it pretty simple for now
 num_conv = 3 # how many convolutional layers?

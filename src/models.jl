@@ -65,20 +65,9 @@ function build_CGCNN(
     )
 end
 
-
-# when Flux v0.12 is released, remove helper function below and instead uncomment these:
-# copied from https://fluxml.ai/Flux.jl/dev/models/advanced/
-#struct Join{T, F}
-#  combine::F
-#  paths::T
-#end
-# allow Join(op, m1, m2, ...) as a constructor
-#Join(combine, paths...) = Join(combine, paths)
-
-#Flux.@functor Join
-#Join(combine, paths) = Parallel(combine, paths)
-#Join(combine, paths...) = Join(combine, paths)
-
+# these dispatches can be removed once https://github.com/FluxML/Flux.jl/issues/1673 is fixed...
+(m::Parallel)(x) = mapreduce(f -> f(x), m.connection, m.layers)
+(m::Parallel)(xs...) = mapreduce((f, x) -> f(x), m.connection, m.layers, xs)
 """
 This is a helper function to the main model builder below. Takes in the inputs and models for the two "parallel" CGCNN-like models at the start of the SGCNN architecture and outputs the concatenated final result.
 """
@@ -149,7 +138,7 @@ function build_SGCNN(
         AGNPool(pool_type, atom_conv_feature_length, pooled_feature_length, pool_width),
     )
     model = Chain(
-        graphs -> slab_graph_layer(graphs[1], bulk_model, graphs[2], surface_model),
+        Parallel(vcat, surface_model, bulk_model),
         Dense(
             2 * pooled_feature_length,
             hidden_layer_width,
@@ -166,6 +155,4 @@ function build_SGCNN(
         ]...,
         Dense(hidden_layer_width, output_length, output_layer_activation, init = initW),
     )
-    # when Flux v0.12 is out, use this instead of line above
-    #model = Chain(Join(vcat, surface_model, bulk_model), Dense(2*pooled_feature_length, hidden_layer_width, hidden_layer_activation, initW=initW), [Dense(hidden_layer_width, hidden_layer_width, hidden_layer_activation, initW=initW) for i in 1:num_hidden_layers-1]..., Dense(hidden_layer_width, output_length, output_layer_activation, initW=initW))
 end

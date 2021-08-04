@@ -40,7 +40,7 @@ function AGNConv(
     σ = softplus;
     initW = glorot_uniform,
     initb = zeros,
-    T::DataType = Float32,
+    T::DataType = Float64,
 )
     selfweight = T.(initW(ch[2], ch[1]))
     convweight = T.(initW(ch[2], ch[1]))
@@ -61,17 +61,10 @@ In the case of providing two matrices, the following conditions must hold:
 - `lapl` must be square and of dimension N x N where N is the number of nodes in the graph
 - `X` (encoded features) must be of dimension M x N, where M is `size(l.convweight)[2]` (or equivalently, `size(l.selfweight)[2]`)
 """
-function (l::AGNConv)(lapl::Matrix{<:Real}, X::Matrix{<:Real})
+function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Real, F}
     # should we put dimension checks here? Could allow more informative errors, but would likely introduce performance penalty. For now it's just in docstring.
-    @show normalise(
-        l.σ.(
-            l.convweight * X * lapl +
-            l.selfweight * X +
-            reduce(hcat, l.bias for i = 1:size(X, 2)),
-        ),
-    )
     out_mat =
-        Float32.(
+        T.(
             normalise(
                 l.σ.(
                     l.convweight * X * lapl +
@@ -101,6 +94,10 @@ end
 end
 @nograd issymmetric
 
+@adjoint function Broadcast.broadcasted(Float64, a::SparseMatrixCSC{T,N}) where {T,N}
+    Float64.(a), Δ -> (nothing, T.(Δ))
+end
+
 @adjoint function softplus(x::Real)
     y = softplus(x)
     return y, Δ -> (Δ * σ(x),)
@@ -124,7 +121,7 @@ struct AGNPool
     )
         @assert in_num_features >= out_num_features "I don't think you actually want to pool to a LONGER vector, do you?"
         dim, str, pad =
-            compute_pool_params(in_num_features, out_num_features, Float32(pool_width_frac))
+            compute_pool_params(in_num_features, out_num_features, Float64(pool_width_frac))
         if pool_type == "max"
             pool_func = Flux.maxpool
         elseif pool_type == "mean"
@@ -143,7 +140,7 @@ Helper function to work out dim, pad, and stride for desired number of output fe
 function compute_pool_params(
     num_f_in::Int64,
     num_f_out::Int64,
-    dim_frac::Float32;
+    dim_frac::AbstractFloat;
     start_dim = Int64(round(dim_frac * num_f_in)),
     start_str = Int64(floor(num_f_in / num_f_out)),
 )

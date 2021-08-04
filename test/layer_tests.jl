@@ -7,7 +7,7 @@ using .Layers: AGNConv, AGNPool
 
 @testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones
-    adjmat = Float32.([0 1 0; 1 0 1; 0 1 0])
+    adjmat = Float64.([0 1 0; 1 0 1; 0 1 0])
     ag = AtomGraph(adjmat, ["C", "C", "C"])
     dummyfzn = GraphNodeFeaturization(["Block"])
     fa = featurize(ag, dummyfzn)
@@ -21,16 +21,16 @@ using .Layers: AGNConv, AGNPool
     @test isapprox(output_fea[:, 1] .+ output_fea[:, 3], .-output_fea[:, 2])
 
     # and now for a loop
-    adjmat = Float32.([0 1 1; 1 0 1; 1 1 0])
+    adjmat = Float64.([0 1 1; 1 0 1; 1 1 0])
     ag = Atoms.AtomGraph(adjmat, ["C", "C", "C"])
     fa = featurize(ag, dummyfzn)
-    @test all(isapprox.(l(fa)[2], zero(Float32), atol = 1e-12))
+    @test all(isapprox.(l(fa)[2], zero(Float64), atol = 1e-12))
 end
 
 @testset "pooling" begin
     # keep our little line graph, but give it more features
-    adjmat = Float32.([0 1 0; 1 0 1; 0 1 0])
-    feat = ones(Float32, 50, 3)
+    adjmat = Float64.([0 1 0; 1 0 1; 0 1 0])
+    feat = ones(Float64, 50, 3)
 
     # make some pooling layers
     meanpool = AGNPool("mean", 50, 10, 0.1)
@@ -38,8 +38,8 @@ end
 
     # start with the easy stuff
     # (also actually test that it evaluates on the FeaturizedAtoms too)
-    @test meanpool(feat) == ones(Float32, 10, 1)
-    @test maxpool(feat) == ones(Float32, 10, 1)
+    @test meanpool(feat) == ones(Float64, 10, 1)
+    @test maxpool(feat) == ones(Float64, 10, 1)
 
     # one level up
     feat[:, 2] .= 0.0

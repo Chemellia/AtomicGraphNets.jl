@@ -26,11 +26,11 @@ input = featurize(ag, dummyfzn)
     @testset "initialization" begin
         @test length(model) == 5
         @test size(model[1].convweight) ==
-            size(model[1].selfweight) ==
-            (conv_fea_len, in_fea_len)
+              size(model[1].selfweight) ==
+              (conv_fea_len, in_fea_len)
         @test size(model[2].convweight) ==
-            size(model[2].selfweight) ==
-            (conv_fea_len, conv_fea_len)
+              size(model[2].selfweight) ==
+              (conv_fea_len, conv_fea_len)
         @test size(model[4].weight) == (pool_fea_len, pool_fea_len)
         @test size(model[5].weight) == (1, pool_fea_len)
     end
@@ -55,7 +55,7 @@ end
 
 @testset "SGCNN" begin
     # could probably do with some more detailed tests here but better something than nothing for now
-    model = build_SGCNN(40, initW=ones)
+    model = build_SGCNN(40, initW = ones)
 
     @testset "initialization" begin
         @test length(model) == 5
@@ -64,7 +64,7 @@ end
     end
 
     @testset "forward pass" begin
-        @test model((input, input))[1] ≈ 44361.42 atol=1e-3
+        @test model((input, input))[1] ≈ 44361.42 atol = 1e-3
     end
 
     @testset "backward pass" begin
@@ -73,6 +73,6 @@ end
         opt = Descent(0.1) # should be deterministic
         Flux.train!(loss, params(model), data, opt)
         @show model
-        @test model((input, input))[1] ≈ -8872.084 atol=1e-3
+        @test model((input, input))[1] ≈ -8872.084 atol = 1e-3
     end
 end

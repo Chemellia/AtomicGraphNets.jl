@@ -61,7 +61,7 @@ In the case of providing two matrices, the following conditions must hold:
 - `lapl` must be square and of dimension N x N where N is the number of nodes in the graph
 - `X` (encoded features) must be of dimension M x N, where M is `size(l.convweight)[2]` (or equivalently, `size(l.selfweight)[2]`)
 """
-function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Real, F}
+function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Real,F}
     # should we put dimension checks here? Could allow more informative errors, but would likely introduce performance penalty. For now it's just in docstring.
     out_mat =
         T.(
@@ -70,7 +70,8 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
                     l.convweight * X * lapl +
                     l.selfweight * X +
                     reduce(hcat, l.bias for i = 1:size(X, 2)),
-                ), dims=[1,2],
+                ),
+                dims = [1, 2],
             ),
         )
     lapl, out_mat

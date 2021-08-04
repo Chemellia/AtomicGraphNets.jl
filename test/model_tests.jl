@@ -1,7 +1,7 @@
 using Test
 using AtomicGraphNets
 using ChemistryFeaturization
-using BSON: @save
+using Flux
 
 using Pkg
 
@@ -42,13 +42,15 @@ input = featurize(ag, dummyfzn)
             model[2].selfweight * output1 +
             hcat([model[2].bias for i = 1:size(output1, 2)]...)
         @test all(isapprox.(model[1:2](input)[2], zeros(Float64, 20, 2), atol = 2e-3))
-        @test isapprox(model(input)[1], 6.93, atol = 1e-2)
+        @test model(input)[1] ≈ 6.93 atol = 1e-2
     end
 
-    # TODO: these
-    # @testset "backward pass" begin
-
-    # end
+    @testset "backward pass" begin
+        # loss(x, y) = Flux.Losses.mse(model(x), y)
+        # data = zip([input], [1.0]) # high-quality data...
+        # opt = Descent(0.1) # should be deterministic
+        # Flux.train!(loss, params(model), data, opt)
+    end
 end
 
 @testset "SGCNN" begin
@@ -62,10 +64,15 @@ end
     end
 
     @testset "forward pass" begin
-        @test isapprox(model((input, input))[1], 44361.42, atol=1e-3)
+        @test model((input, input))[1] ≈ 44361.42 atol=1e-3
     end
 
     @testset "backward pass" begin
-
+        loss(x, y) = Flux.Losses.mse(model(x), y)
+        data = zip([(input, input)], [1.0]) # high-quality data...
+        opt = Descent(0.1) # should be deterministic
+        Flux.train!(loss, params(model), data, opt)
+        @show model
+        @test model((input, input))[1] ≈ -8872.084 atol=1e-3
     end
 end

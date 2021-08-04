@@ -1,20 +1,13 @@
 module Layers
 
 using Flux
-using Flux: glorot_uniform, @functor#, destructure
+using Flux: glorot_uniform, normalise, @functor#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
 #using DifferentialEquations, DiffEqSensitivity
-
-# regularized norm fcn, cut out the dims part
-function reg_norm(x::AbstractArray, ϵ = sqrt(eps(Float32)))
-    μ′ = mean(x)
-    σ′ = std(x, mean = μ′, corrected = false)
-    return Float32.((x .- μ′) ./ (σ′ + ϵ))
-end
 
 """
     AGNConv(in=>out)
@@ -70,14 +63,21 @@ In the case of providing two matrices, the following conditions must hold:
 """
 function (l::AGNConv)(lapl::Matrix{<:Real}, X::Matrix{<:Real})
     # should we put dimension checks here? Could allow more informative errors, but would likely introduce performance penalty. For now it's just in docstring.
+    @show normalise(
+        l.σ.(
+            l.convweight * X * lapl +
+            l.selfweight * X +
+            reduce(hcat, l.bias for i = 1:size(X, 2)),
+        ),
+    )
     out_mat =
         Float32.(
-            reg_norm(
+            normalise(
                 l.σ.(
                     l.convweight * X * lapl +
                     l.selfweight * X +
                     reduce(hcat, l.bias for i = 1:size(X, 2)),
-                ),
+                ), dims=[1,2],
             ),
         )
     lapl, out_mat

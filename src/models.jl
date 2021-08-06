@@ -87,8 +87,6 @@ Build a slab graph network, based off of Kim et al. 2020: https://pubs.acs.org/d
 
 For now, fixing both "parallel" convolutional paths to have same hyperparams for simplicity and to basically be copies of CGCNN. Might relax this later.
 
-TODO: change this to use the new Flux.Parallel construct, once v0.12 is released
-
 # Arguments:
 Same as [`build_CGCNN`](@ref) except for additional parameter of `hidden_layer_width`
 """

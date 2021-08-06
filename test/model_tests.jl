@@ -20,7 +20,7 @@ input = featurize(ag, dummyfzn)
         atom_conv_feature_length = conv_fea_len,
         pooled_feature_length = pool_fea_len,
         num_hidden_layers = 2,
-        initW = ones,
+        initW = (d...) -> fill(0.1, d...),
     )
 
     @testset "initialization" begin
@@ -42,20 +42,21 @@ input = featurize(ag, dummyfzn)
             model[2].selfweight * output1 +
             hcat([model[2].bias for i = 1:size(output1, 2)]...)
         @test all(isapprox.(model[1:2](input)[2], zeros(Float64, 20, 2), atol = 2e-3))
-        @test model(input)[1] ≈ 6.93 atol = 1e-2
+        @test model(input)[1] ≈ 0.693 atol = 1e-3
     end
 
     @testset "backward pass" begin
-        # loss(x, y) = Flux.Losses.mse(model(x), y)
-        # data = zip([input], [1.0]) # high-quality data...
-        # opt = Descent(0.1) # should be deterministic
-        # Flux.train!(loss, params(model), data, opt)
+        loss(x, y) = Flux.Losses.mse(model(x), y)
+        data = zip([input], [1.0]) # high-quality data...
+        opt = Descent(0.1) # should be deterministic
+        Flux.train!(loss, params(model), data, opt)
+        @test model(input)[1] ≈ 1.051 atol = 1e-3
     end
 end
 
 @testset "SGCNN" begin
     # could probably do with some more detailed tests here but better something than nothing for now
-    model = build_SGCNN(40, initW = ones)
+    model = build_SGCNN(40, initW = (d...) -> fill(0.1, d...))
 
     @testset "initialization" begin
         @test length(model) == 5
@@ -64,7 +65,7 @@ end
     end
 
     @testset "forward pass" begin
-        @test model((input, input))[1] ≈ 44361.42 atol = 1e-3
+        @test model((input, input))[1] ≈ 45.331 atol = 1e-3
     end
 
     @testset "backward pass" begin
@@ -72,7 +73,6 @@ end
         data = zip([(input, input)], [1.0]) # high-quality data...
         opt = Descent(0.1) # should be deterministic
         Flux.train!(loss, params(model), data, opt)
-        @show model
-        @test model((input, input))[1] ≈ -8872.084 atol = 1e-3
+        @test model((input, input))[1] ≈ -75.985 atol = 1e-3
     end
 end

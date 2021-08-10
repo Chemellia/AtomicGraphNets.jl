@@ -51,7 +51,9 @@ function train_formation_energy(;
     output = y[indices]
 
     # next, make and featurize graphs
-    println("Building graphs and feature vectors from structures...")
+    if verbose
+        println("Building graphs and feature vectors from structures...")
+    end
     inputs = FeaturizedAtoms[]
 
     for r in eachrow(info)
@@ -62,7 +64,9 @@ function train_formation_energy(;
     end
 
     # pick out train/test sets
-    println("Dividing into train/test sets...")
+    if verbose
+        println("Dividing into train/test sets...")
+    end
     train_output = output[1:num_train]
     test_output = output[num_train+1:end]
     train_input = inputs[1:num_train]
@@ -70,7 +74,9 @@ function train_formation_energy(;
     train_data = zip(train_input, train_output)
 
     # build the model
-    println("Building the network...")
+    if verbose
+        println("Building the network...")
+    end
     model = build_CGCNN(
         num_features,
         num_conv = num_conv,
@@ -81,11 +87,20 @@ function train_formation_energy(;
 
     # define loss function and a callback to monitor progress
     loss(x, y) = Flux.Losses.mse(model(x), y)
-    evalcb() = @show(mean(loss.(test_input, test_output)))
+    evalcb_verbose() = @show(mean(loss.(test_input, test_output)))
+    evalcb_quiet() = return nothing
+    local evalcb
+    if verbose
+        evalcb = evalcb_verbose
+    else
+        evalcb = evalcb_quiet
+    end
     evalcb()
 
     # train
-    println("Training!")
+    if verbose
+        println("Training!")
+    end
     @epochs num_epochs Flux.train!(
         loss,
         params(model),

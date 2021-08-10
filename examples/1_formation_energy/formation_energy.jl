@@ -1,8 +1,6 @@
 #=
  Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
-using Pkg
-Pkg.activate(joinpath(@__DIR__, "..", ".."))
 using CSV, DataFrames
 using Random, Statistics
 using Flux

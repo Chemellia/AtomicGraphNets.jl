@@ -1,10 +1,18 @@
 using AtomicGraphNets
 using Test
 
-@testset "layer_tests" begin
-    include("layer_tests.jl")
-end
+@testset "AtomicGraphNets.jl" begin
 
-@testset "model_tests" begin
-    include("model_tests.jl")
+    @testset "Layers" begin
+        include("layer_tests.jl")
+    end
+
+    @testset "Models" begin
+        include("model_tests.jl")
+    end
+
+    @testset "Examples" begin
+        include("example_tests.jl")
+    end
+
 end

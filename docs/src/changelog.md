@@ -4,6 +4,22 @@ I'm generally trying to adhere to [semver](https://semver.org) here. This means 
 
 Categories to include for each release, if relevant: breaking, added, fixed, removed/deprecated
 
+## Upcoming
+### Breaking (sort of)
+* removed examples that didn't really work anyway
+
+### Added
+* tests for models and examples
+
+### Fixed
+* examples updated for new ChemistryFeaturization API
+
+## v0.2.0 [2021-07-14]
+Identical to v0.1.3, tagged for some Pkg convenience purposes.
+
+## v0.1.4 [2021-07-14]
+Identical to v0.1.2 but with Flux compat entry included both v0.11 and v0.12.
+
 ## v0.1.3 [2021-07-09]
 ### Breaking
 * now compatible with latest ChemistryFeaturization API

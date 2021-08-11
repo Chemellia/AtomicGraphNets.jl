@@ -1,9 +1,10 @@
 name = "AtomicGraphNets"
 uuid = "ccdf130a-3c88-4595-a023-a7e7f78b9dd5"
 authors = ["Rachel Kurchin <rkurchin@cmu.edu>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 ChemistryFeaturization = "6c925690-434a-421d-aea7-51398c5b007a"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -11,7 +12,10 @@ DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"

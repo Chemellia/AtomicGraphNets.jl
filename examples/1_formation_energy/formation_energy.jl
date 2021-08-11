@@ -89,12 +89,7 @@ function train_formation_energy(;
     loss(x, y) = Flux.Losses.mse(model(x), y)
     evalcb_verbose() = @show(mean(loss.(test_input, test_output)))
     evalcb_quiet() = return nothing
-    local evalcb
-    if verbose
-        evalcb = evalcb_verbose
-    else
-        evalcb = evalcb_quiet
-    end
+    evalcb = verbose ? evalcb_verbose : evalcb_quiet
     evalcb()
 
     # train

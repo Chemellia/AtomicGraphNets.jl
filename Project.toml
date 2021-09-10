@@ -4,7 +4,6 @@ authors = ["Rachel Kurchin <rkurchin@cmu.edu>"]
 version = "0.2.1"
 
 [deps]
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 ChemistryFeaturization = "6c925690-434a-421d-aea7-51398c5b007a"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"

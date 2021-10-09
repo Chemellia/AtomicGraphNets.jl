@@ -1,7 +1,7 @@
 module AtomicGraphNets
 
 export AGNConv, AGNPool#, AGNConvDEQ
-include("layers.jl")
+include("layers/layers.jl")
 using .Layers: AGNConv, AGNPool
 
 include("models.jl")

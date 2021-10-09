@@ -2,7 +2,7 @@ using Test
 using ChemistryFeaturization
 using SimpleWeightedGraphs
 
-include("../src/layers.jl")
+include("../src/layers/layers.jl")
 using .Layers: AGNConv, AGNPool
 
 @testset "AGNConv" begin

@@ -22,8 +22,9 @@ struct EigenPool
     end
 end
 
-function eigen_pooling(graph::Matrix{<:Real}, features::Matrix{<:Real})
-    L = Atoms.normalized_laplacian(graph) # get the laplacian matrix
+# here, L is the laplacian matrix
+# this probably needs to be optimized.
+function eigen_pooling(L::Matrix{<:Real}, features::Matrix{<:Real})
     L_eigen_vectors = eigvecs(L)    # find eigen vectors for L
     result = Vector()
 
@@ -33,7 +34,8 @@ function eigen_pooling(graph::Matrix{<:Real}, features::Matrix{<:Real})
     end
 
     # using an agreeable H and then return H elements of result hcatt-ed into a single 1xdH vector
-
+    result = hcat(result...)'
+    reshape(result, length(result), 1)  # return it as a dHx1 Matrix
 end
 
 #=

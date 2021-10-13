@@ -1,5 +1,3 @@
-module Layers
-
 #using DifferentialEquations, DiffEqSensitivity
 
 include("conv/agnconv.jl")
@@ -44,5 +42,3 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end
 """
-
-end

@@ -3,7 +3,6 @@ using ChemistryFeaturization
 using SimpleWeightedGraphs
 
 include("../src/layers/layers.jl")
-using .Layers: AGNConv, AGNPool
 
 @testset "AGNConv" begin
     # create simple line graph, populate it with feature of all ones

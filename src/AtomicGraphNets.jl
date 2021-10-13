@@ -1,8 +1,8 @@
 module AtomicGraphNets
 
 export AGNConv, AGNPool#, AGNConvDEQ
-include("layers.jl")
-using .Layers: AGNConv, AGNPool
+include("layers/layers.jl")
+export AGNConv, AGNPool
 
 include("models.jl")
 export build_CGCNN, build_SGCNN

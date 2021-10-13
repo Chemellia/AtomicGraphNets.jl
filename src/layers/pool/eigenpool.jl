@@ -17,24 +17,34 @@ in theory would give us the overall graph representation
 # TBD - what other fields would be necessary for the pooling layer itself?
 struct EigenPool
     pool::Function # pooling operator applied over the adjacency matrix
-    function EigenPool()
-        new(eigen_pooling)
+    out_feature_size::Int64
+    function EigenPool(out_feature_size::Int64)
+        new(eigen_pooling, out_feature_size)
     end
 end
 
 # here, L is the laplacian matrix
 # this probably needs to be optimized.
-function eigen_pooling(L::Matrix{<:Real}, features::Matrix{<:Real})
+function eigen_pooling(L::Matrix{<:Real}, features::Matrix{<:Real}, out_feature_size::Int64)
     L_eigen_vectors = eigvecs(L)    # find eigen vectors for L
+
+    N = size(L_eigen_vectors)[1] # graph size
+    d = Integer(length(features)/N) # dimensions of each feature vector
+
+    H = Integer(floor(out_feature_size/d)) # number of features to be pooled
+    H = H > N ? N : H # if H is greater than the number of nodes, then we pool all the nodes
+
+    pad_len = out_feature_size - (d * H)
+
     result = Vector()
 
-    for i = 1:size(L_eigen_vectors)[1]
+    for i = 1:H
         L_i = L_eigen_vectors[:, i]
         push!(result, L_i'*features)
     end
 
-    # using an agreeable H and then return H elements of result hcatt-ed into a single 1xdH vector
-    result = hcat(result...)'
+    # return H features + zero padded elements hcatt-ed into a single 1xdH matrix
+    result = hcat(result..., zeros(Float64, pad_len, 1)...)'
     reshape(result, length(result), 1)  # return it as a dHx1 Matrix
 end
 
@@ -43,7 +53,4 @@ end
  = pooled node features which is the final graph representation fed to the dense layer
  = The adj_graph would be `FeaturizedAtoms.atoms` and features would be the same as usual
  =#
-function (m::EigenPool)(adj_graph::Matrix{<:Real}, features::Matrix{<:Real})
-    features = m.pool(adj_graph, features)
-    return adj_graph, features
-end
+(m::egnpl)(adj_graph::Matrix{<:Real}, features::Matrix{<:Real}) = egnpl.pool(adj_graph, features, m.out_feature_size)

@@ -16,7 +16,11 @@ function xyz_to_crystal(fpath)
     Crystal(splitpath(fpath)[end][1:end-4], box, Frac(a, box), Frac(charges, box))
 end
 
-# xyzs is a list of files
+# this stuff is on my local machine...
+qm9xyz = readdir("/Volumes/Data/ML_datasets/qm9/", join=true)
+xyzs = qm9xyz[rand(1:133886, 100)]
+
+# make the inputs from the filepaths
 ags = AtomGraph.(xyz_to_crystal.(xyzs))
 fzn = GraphNodeFeaturization([
     "Group",

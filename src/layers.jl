@@ -7,7 +7,7 @@ using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
-#using DifferentialEquations, DiffEqSensitivity
+using DifferentialEquations, DiffEqSensitivity
 
 """
     AGNConv(in=>out)
@@ -215,10 +215,9 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     guess = l.conv(fa)[2]
 
     f = function (dfeat,feat,p,t)
-        input = gr
-        input.encoded_features = reshape(feat,size(guess))
+        input = fa.atoms.laplacian, reshape(feat,size(guess))
         output = re(p)(input)
-        dfeat .= vec(output[2]) .- vec(input.encoded_features)
+        dfeat .= vec(output[2]) .- vec(input[2])
     end
 
     prob = SteadyStateProblem{true}(f, vec(guess), p)
@@ -226,7 +225,7 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     alg = SSRootfind()
     #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
     out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
-    return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
+    return fa.atoms.laplacian, out_mat
 end
 
 end

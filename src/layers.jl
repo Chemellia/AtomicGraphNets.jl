@@ -192,8 +192,6 @@ end
 (m::AGNPool)(lapl::Matrix{<:Real}, out_mat::Matrix{<:Real}) = m(out_mat)
 (m::AGNPool)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = m(t[2])
 
-# following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
-"""
 # DEQ-style model where we treat the convolution as a SteadyStateProblem
 struct AGNConvDEQ{T,F}
     conv::AGNConv{T,F}
@@ -214,7 +212,7 @@ end
 function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     p,re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
-    guess = l.conv(gr)[2]
+    guess = l.conv(fa)[2]
 
     f = function (dfeat,feat,p,t)
         input = gr
@@ -230,6 +228,5 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
     return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
 end
-"""
 
 end

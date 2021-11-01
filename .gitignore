@@ -2,11 +2,10 @@ Manifest.toml
 *~
 playing.jl
 */api_key_is*
-examples/*/data/
+examples/1_formation_energy/data/
 *#
 .vscode/*
 Icon*
 */Icon*
 */*/Icon*
 build
-*.jls

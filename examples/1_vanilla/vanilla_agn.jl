@@ -1,39 +1,32 @@
 #=
  Train a simple network to predict formation energy per atom (downloaded from Materials Project).
 =#
+using Pkg; Pkg.activate("../../")
 using CSV, DataFrames
 using Random, Statistics
 using Flux
 using Flux: @epochs
 using ChemistryFeaturization
 using AtomicGraphNets
+using Serialization
 
 function train(;
     num_pts = 100,
     num_epochs = 5,
     data_dir = joinpath(@__DIR__, "data"),
     verbose = true,
-)
-    println("Setting things up...")
+               )
+    
+    if verbose:
+        println("Setting things up...")
+    end
 
     # data-related options
     train_frac = 0.8 # what fraction for training?
     num_train = Int32(round(train_frac * num_pts))
     num_test = num_pts - num_train
-    prop = "formation_energy_per_atom"
-    id = "task_id" # field by which to label each input material
-
-    # set up the featurization
-    featurization = GraphNodeFeaturization([
-        "Group",
-        "Row",
-        "Block",
-        "Atomic mass",
-        "Atomic radius",
-        "X",
-    ])
-    num_features =
-        sum(ChemistryFeaturization.FeatureDescriptor.output_shape.(featurization.features)) # TODO: update this with cleaner syntax once new version of CF is tagged that has it
+    prop = :Cv # choose any column from labels.csv except :key
+    id = :key # field by which to label each input material
 
     # model hyperparameters – keeping it pretty simple for now
     num_conv = 3 # how many convolutional layers?
@@ -42,25 +35,24 @@ function train(;
     opt = ADAM(0.001) # optimizer
 
     # dataset...first, read in outputs
-    info = CSV.read(string(data_dir, prop, ".csv"), DataFrame)
-    y = Array(Float32.(info[!, Symbol(prop)]))
+    info = CSV.read(string(data_dir, "labels.csv"), DataFrame)
+    y = Array(Float32.(info[!, prop]))
 
     # shuffle data and pick out subset
     indices = shuffle(1:size(info, 1))[1:num_pts]
     info = info[indices, :]
     output = y[indices]
 
-    # next, make and featurize graphs
+    # next, read in prefeaturized graphs
     if verbose
-        println("Building graphs and feature vectors from structures...")
+        println("Reading in graphs...")
     end
+    
     inputs = FeaturizedAtoms[]
 
     for r in eachrow(info)
-        cifpath = string(data_dir, prop, "_cifs/", r[Symbol(id)], ".cif")
-        gr = AtomGraph(cifpath)
-        input = featurize(gr, featurization)
-        push!(inputs, input)
+        fpath = string(data_dir, "qm9_jls/", r[id], ".jls")
+        push!(inputs, deserialize(fpath))
     end
 
     # pick out train/test sets
@@ -77,6 +69,7 @@ function train(;
     if verbose
         println("Building the network...")
     end
+    num_features = size(inputs[1].encoded_features, 1)
     model = build_CGCNN(
         num_features,
         num_conv = num_conv,

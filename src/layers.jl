@@ -78,7 +78,7 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
 end
 
 # alternate signature so FeaturizedAtoms can be fed into first layer
-(l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) =
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where T =
     l(a.atoms.laplacian, a.encoded_features)
 
 # signature to splat appropriately

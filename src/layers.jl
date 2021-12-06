@@ -198,7 +198,7 @@ struct AGNConvDEQ{T,F}
 end
 
 # NB can't do a pair of different numbers because otherwise get a size mismatch when trying to feed it back in...
-function AGNConvDEQ(input_size::Integer, σ=softplus; initW=glorot_uniform, initb=glorot_uniform, T::DataType=Float32, bias::Bool=true)
+function AGNConvDEQ(input_size::Integer, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32, bias::Bool=true)
     conv = AGNConv(input_size=>input_size, σ; initW=initW, initb=initb, T=T)
     AGNConvDEQ(conv)
 end

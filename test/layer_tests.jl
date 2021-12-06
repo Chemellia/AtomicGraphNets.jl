@@ -27,6 +27,28 @@ using .Layers: AGNConv, AGNPool
     @test all(isapprox.(l(fa)[2], zero(Float64), atol = 1e-12))
 end
 
+@testset "AGNConvDEQ" begin
+    # create simple line graph, populate it with feature of all ones
+    adjmat = Float64.([0 1 0; 1 0 1; 0 1 0])
+    ag = AtomGraph(adjmat, ["C", "C", "C"])
+    dummyfzn = GraphNodeFeaturization(["Block"])
+    fa = featurize(ag, dummyfzn)
+
+    # create a conv layer, initialize weights with ones
+    l = AGNConvDEQ(4, initW = ones, initb = zeros)
+
+    # test output looks as expected
+    output_fea = l(fa)[2]
+    @test output_fea[:, 1] == output_fea[:, 3]
+    @test isapprox(output_fea[:, 1] .+ output_fea[:, 3], .-output_fea[:, 2])
+
+    # and now for a loop
+    adjmat = Float64.([0 1 1; 1 0 1; 1 1 0])
+    ag = Atoms.AtomGraph(adjmat, ["C", "C", "C"])
+    fa = featurize(ag, dummyfzn)
+    @test all(isapprox.(l(fa)[2], zero(Float64), atol = 1e-12))
+end
+
 @testset "pooling" begin
     # keep our little line graph, but give it more features
     adjmat = Float64.([0 1 0; 1 0 1; 0 1 0])

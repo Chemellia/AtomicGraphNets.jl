@@ -211,7 +211,7 @@ end
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
 function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
-    p,re = Flux.destructure(l.conv)
+    p, re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
     guess = l.conv(fa)[2]
 
@@ -225,7 +225,14 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     #return solve(prob, DynamicSS(Tsit5())).u
     alg = SSRootfind()
     #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
-    out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
+    out_mat = reshape(
+        solve(
+            prob,
+            alg,
+            sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP()),
+        ).u,
+        size(guess),
+    )
     return fa.atoms.laplacian, out_mat
 end
 

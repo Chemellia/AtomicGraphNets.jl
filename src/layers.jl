@@ -7,7 +7,7 @@ using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
 using ChemistryFeaturization
-#using DifferentialEquations, DiffEqSensitivity
+using DifferentialEquations, DiffEqSensitivity
 
 """
     AGNConv(in=>out)
@@ -78,7 +78,7 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
 end
 
 # alternate signature so FeaturizedAtoms can be fed into first layer
-(l::AGNConv)(a::FeaturizedAtoms{AtomGraph,GraphNodeFeaturization}) =
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where T =
     l(a.atoms.laplacian, a.encoded_features)
 
 # signature to splat appropriately
@@ -192,15 +192,14 @@ end
 (m::AGNPool)(lapl::Matrix{<:Real}, out_mat::Matrix{<:Real}) = m(out_mat)
 (m::AGNPool)(t::Tuple{Matrix{R1},Matrix{R2}}) where {R1<:Real,R2<:Real} = m(t[2])
 
-# following commented out for now because it only runs suuuuper slowly but slows down precompilation a lot
-"""
 # DEQ-style model where we treat the convolution as a SteadyStateProblem
 struct AGNConvDEQ{T,F}
     conv::AGNConv{T,F}
 end
 
-function AGNConvDEQ(ch::Pair{<:Integer,<:Integer}, σ=softplus; initW=glorot_uniform, initb=glorot_uniform, T::DataType=Float32, bias::Bool=true)
-    conv = AGNConv(ch, σ; initW=initW, initb=initb, T=T)
+# NB can't do a pair of different numbers because otherwise get a size mismatch when trying to feed it back in...
+function AGNConvDEQ(input_size::Integer, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32, bias::Bool=true)
+    conv = AGNConv(input_size=>input_size, σ; initW=initW, initb=initb, T=T)
     AGNConvDEQ(conv)
 end
 
@@ -212,24 +211,30 @@ end
 # u is the features, p is the parameters of conv
 # re(p) reconstructs the convolution with new parameters p
 function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
-    p,re = Flux.destructure(l.conv)
+    p, re = Flux.destructure(l.conv)
     # do one convolution to get initial guess
-    guess = l.conv(gr)[2]
+    guess = l.conv(fa)[2]
 
     f = function (dfeat,feat,p,t)
-        input = gr
-        input.encoded_features = reshape(feat,size(guess))
+        input = fa.atoms.laplacian, reshape(feat,size(guess))
         output = re(p)(input)
-        dfeat .= vec(output[2]) .- vec(input.encoded_features)
+        dfeat .= vec(output[2]) .- vec(input[2])
     end
 
     prob = SteadyStateProblem{true}(f, vec(guess), p)
     #return solve(prob, DynamicSS(Tsit5())).u
     alg = SSRootfind()
     #alg = SSRootfind(nlsolve = (f,u0,abstol) -> (res=SteadyStateDiffEq.NLsolve.nlsolve(f,u0,autodiff=:forward,method=:anderson,iterations=Int(1e6),ftol=abstol);res.zero))
-    out_mat = reshape(solve(prob, alg, sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP())).u,size(guess))
-    return AtomGraph(gr.graph, gr.elements, out_mat, gr.featurization)
+    out_mat = reshape(
+        solve(
+            prob,
+            alg,
+            sensealg = SteadyStateAdjoint(autodiff = false, autojacvec = ZygoteVJP()),
+        ).u,
+        size(guess),
+    )
+    return fa.atoms.laplacian, out_mat
 end
-"""
+
 
 end

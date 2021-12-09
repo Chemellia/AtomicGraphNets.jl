@@ -4,7 +4,14 @@ I'm generally trying to adhere to [semver](https://semver.org) here. This means 
 
 Categories to include for each release, if relevant: breaking, added, fixed, removed/deprecated
 
-## Upcoming
+## v0.2.2 [date]
+### Added
+* DEQ layer and model-builder, tests for both
+
+### Fixed
+* compatible with ChemistryFeaturization v0.6.0
+
+## v0.2.1 [2021-09-30]
 ### Breaking (sort of)
 * removed examples that didn't really work anyway
 
@@ -12,7 +19,7 @@ Categories to include for each release, if relevant: breaking, added, fixed, rem
 * tests for models and examples
 
 ### Fixed
-* examples updated for new ChemistryFeaturization API
+* example updated for new ChemistryFeaturization API
 
 ## v0.2.0 [2021-07-14]
 Identical to v0.1.3, tagged for some Pkg convenience purposes.

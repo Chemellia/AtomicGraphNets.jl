@@ -8,9 +8,13 @@ using Flux: @epochs
 using ChemistryFeaturization
 using AtomicGraphNets
 
-function build_graphs(prop, featurization; data_dir = nothing,
-			                   num_pts = nothing,
-				           verbose = false)
+function build_graphs(
+    prop,
+    featurization;
+    data_dir = nothing,
+    num_pts = nothing,
+    verbose = false,
+)
     info = CSV.read(joinpath(data_dir, prop * ".csv"), DataFrame)
     y = Array(Float32.(info[!, Symbol(prop)]))
 

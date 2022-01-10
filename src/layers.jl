@@ -1,12 +1,8 @@
-module Layers
-
-using Flux
 using Flux: glorot_uniform, normalise, @functor#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
-using ChemistryFeaturization
 using DifferentialEquations, DiffEqSensitivity
 
 """
@@ -236,5 +232,3 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     return fa.atoms.laplacian, out_mat
 end
 
-
-end

@@ -51,7 +51,7 @@ end
 @functor AGNConv
 
 function Base.show(io::IO, agn::AGNConv)
-  print(io, "AGNConv($(join(reverse(size(agn.convweight)), " => ")))")
+  print(io, "AGNConv($(join(reverse(size(agn.convweight)), " => ")), $(agn.σ))")
 end
 
 """

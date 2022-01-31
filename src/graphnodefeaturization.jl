@@ -1,16 +1,20 @@
-import ChemistryFeaturization: encode, encodable_elements, decode, output_shape
+import ChemistryFeaturization: encode, encodable_elements, decode, output_shape, features
+using ChemistryFeaturization.Data
+using ChemistryFeaturization.ElementFeature
 
 using DataFrames
 
+const default_nbins = 10
+
 """
-    GraphNodeFeaturization(encoded_atom_features::Vector{AtomFeatureDescriptor})
-    GraphNodeFeaturization(feature_names, lookup_table, nbins, logspaced, categorical)
+    GraphNodeFeaturization(atom_features, codecs)
+    GraphNodeFeaturization(feature_names, lookup_table; nbins, logspaced, categorical)
 
 A featurization for AtomGraph objects that encodes features associated with each node. Contains a collection of `AbstractAtomFeatureDescriptor` objects, and can be initialized by passing those, or by passing parameters for constructing them.
 
 ## Required Arguments
 - `feature_names::Vector{String}`: Names of each feature
-- `lookup_table::DataFrame` (optional): source of data for features, if not included in built-in `atom_data_df`
+- `lookup_table::DataFrame` (optional): source of data for features, if not included in built-in `element_data_df`
 
 ## Keyword Arguments
 - `nbins::Union{Vector{Integer},Integer}`: Number of bins to use for one-hot encoding of continuous-valued features. Will be ignored for categorical features.
@@ -18,10 +22,12 @@ A featurization for AtomGraph objects that encodes features associated with each
 - `categorical::Union{Vector{Bool},Bool}`: Whether each feature is categorical or continous-valued.
 """
 struct GraphNodeFeaturization <: AbstractFeaturization
-    features::Vector{<:AbstractAtomFeatureDescriptor} # TODO: this might need another name
+    features::Vector{<:AbstractAtomFeatureDescriptor}
+    codecs::Vector{<:AbstractCodec}
 end
 
-# TODO: fix to be concordant with updated interface
+GraphNodeFeaturization(features::Vector{<:AbstractAtomFeatureDescriptor}) = GraphNodeFeaturization(features, default_codec.(features))
+
 # NB: this constructor only works if every feature is an ElementFeature
 function GraphNodeFeaturization(
     feature_names::Vector{String},
@@ -33,10 +39,10 @@ function GraphNodeFeaturization(
     num_features = length(feature_names)
     local lookup_table_here, logspaced_here, categorical_here, nbins_here
     if isnothing(lookup_table)
-        lookup_table_here = atom_data_df
+        lookup_table_here = element_data_df
     else
         # need to merge them in case some data is in one place and some the other
-        lookup_table_here = outerjoin(atom_data_df, lookup_table, on = :Symbol)
+        lookup_table_here = outerjoin(element_data_df, lookup_table, on = :Symbol)
     end
 
     if isnothing(logspaced)
@@ -58,16 +64,14 @@ function GraphNodeFeaturization(
         nbins_here = get_param_vec(nbins, num_features, pad_val = default_nbins)
     end
 
-    afs = map(zip(feature_names, nbins_here, logspaced_here, categorical_here)) do args
-        ElementFeatureDescriptor(
-            args[1],
-            lookup_table_here,
-            nbins = args[2],
-            logspaced = args[3],
-            categorical = args[4],
-        )
+    bins = map(zip(feature_names, nbins_here, logspaced_here, categorical_here)) do args
+        get_bins(args[1], lookup_table_here, nbins=args[2], logspaced=args[3], categorical=args[4])
     end
-    GraphNodeFeaturization(afs)
+
+    codecs = OneHotOneCold.(categorical_here, bins)
+    efs = ElementFeatureDescriptor.(feature_names, Ref(lookup_table_here))
+
+    GraphNodeFeaturization(efs, codecs)
 end
 
 # pretty printing, short
@@ -86,10 +90,9 @@ function Base.show(io::IO, ::MIME"text/plain", fzn::GraphNodeFeaturization)
     print(io, st)
 end
 
-output_shape(fzn::GraphNodeFeaturization) = sum(output_shape.(fzn.features))
+output_shape(fzn::GraphNodeFeaturization) = sum(output_shape.(fzn.codecs))
 
-encodable_elements(fzn::GraphNodeFeaturization) =
-    intersect([encodable_elements(f) for f in fzn.features]...)
+features(fzn::GraphNodeFeaturization) = fzn.features
 
 """
     chunk_vec(vec, nbins)
@@ -120,22 +123,22 @@ function chunk_vec(vec::Vector{<:Real}, nbins::Vector{<:Integer})
     return chunks
 end
 
-function encode(fzn::GraphNodeFeaturization, ag::AtomGraph)
-    encoded = reduce(vcat, map((x) -> encode(x, ag), fzn.features))
+function encode(ag::AtomGraph, fzn::GraphNodeFeaturization)
+    encoded = reduce(hcat, map(x -> encode(ag, x[1], x[2]), zip(fzn.features, fzn.codecs)))
     return encoded
 end
 
-function decode(fzn::GraphNodeFeaturization, encoded::Matrix{<:Real})
-    num_atoms = size(encoded, 2)
-    nbins = [output_shape(f) for f in fzn.features]
+function decode(encoded::Matrix{<:Real}, fzn::GraphNodeFeaturization)
+    num_atoms = size(encoded, 1)
+    nbins = [output_shape(c) for c in fzn.codecs]
     local decoded = Dict{Integer,Dict{String,Any}}()
     for i = 1:num_atoms
         #println("atom $i")
-        chunks = chunk_vec(encoded[:, i], nbins)
+        chunks = chunk_vec(encoded[i, :], nbins)
         decoded[i] = Dict{String,Any}()
-        for (chunk, f) in zip(chunks, fzn.features)
+        for (chunk, f, c) in zip(chunks, fzn.features, fzn.codecs)
             #println("    $(f.name): $(decode(f, chunk))")
-            decoded[i][f.name] = decode(f, chunk)
+            decoded[i][f.name] = decode(chunk, c)
         end
     end
     return decoded

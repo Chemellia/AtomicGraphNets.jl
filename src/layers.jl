@@ -1,4 +1,4 @@
-using Flux: glorot_uniform, normalise, @functor#, destructure
+using Flux: glorot_uniform, normalise, @functor, softplus#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
@@ -38,8 +38,8 @@ function AGNConv(
     initb = zeros,
     T::DataType = Float64,
 )
-    selfweight = T.(initW(ch[2], ch[1]))
-    convweight = T.(initW(ch[2], ch[1]))
+    selfweight = T.(initW(ch[1], ch[2]))
+    convweight = T.(initW(ch[1], ch[2]))
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
 end
@@ -63,9 +63,9 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
         T.(
             normalise(
                 l.σ.(
-                    l.convweight * X * lapl +
-                    l.selfweight * X +
-                    reduce(hcat, l.bias for i = 1:size(X, 2)),
+                    lapl * X * l.convweight + 
+                    X * l.selfweight + 
+                    reduce(vcat, l.bias' for i = 1:size(X, 1)),
                 ),
                 dims = [1, 2],
             ),
@@ -179,9 +179,8 @@ function (m::AGNPool)(feat::Matrix{<:Real})
     # compute what pad and stride need to be...
     x = reshape(feat, (size(feat)..., 1, 1))
     # do mean pooling across feature direction, average across all nodes in graph
-    # TODO: decide if this approach makes sense or if there's a smarter way
-    pdims = PoolDims(x, (m.dim, 1); padding = (m.pad, 0), stride = (m.str, 1))
-    mean(m.pool_func(x, pdims), dims = 2)[:, :, 1, 1]
+    pdims = PoolDims(x, (1, m.dim); padding = (0, m.pad), stride = (1, m.str))
+    Matrix(mean(m.pool_func(x, pdims), dims = 1)[:, :, 1, 1]')
 end
 
 # alternate signatures so it can take output directly from AGNConv layer

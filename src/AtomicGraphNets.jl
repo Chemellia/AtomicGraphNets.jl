@@ -5,7 +5,7 @@ using ChemistryFeaturization
 using Flux
 
 include("graphnodefeaturization.jl")
-export GraphNodeFeaturization, encode, decode
+export GraphNodeFeaturization, encode, decode, features
 export encodable_elements, chunk_vec, output_shape
 
 export AGNConv, AGNPool, AGNConvDEQ

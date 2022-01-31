@@ -32,8 +32,7 @@ function train_formation_energy(;
         "Atomic radius",
         "X",
     ])
-    num_features =
-        sum(ChemistryFeaturization.FeatureDescriptor.output_shape.(featurization.features)) # TODO: update this with cleaner syntax once new version of CF is tagged that has it
+    num_features = output_shape(featurization)
 
     # model hyperparameters – keeping it pretty simple for now
     num_conv = 3 # how many convolutional layers?

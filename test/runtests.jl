@@ -1,7 +1,12 @@
 using AtomicGraphNets
+using AtomGraphs
 using Test
 
 @testset "AtomicGraphNets.jl" begin
+
+    @testset "GraphNodeFeaturization" begin
+        include("featurization_tests.jl")
+    end
 
     @testset "Layers" begin
         include("layer_tests.jl")

@@ -50,6 +50,10 @@ end
 
 @functor AGNConv
 
+function Base.show(io::IO, agn::AGNConv)
+    print(io, "AGNConv($(join(reverse(size(agn.convweight)), " => ")), $(agn.σ))")
+end
+
 """
  Define action of layer on inputs: do a graph convolution, add this (weighted by convolutional weight) to the features themselves (weighted by self weight) and the per-feature bias (concatenated to match number of nodes in graph).
 

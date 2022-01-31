@@ -26,7 +26,8 @@ struct GraphNodeFeaturization <: AbstractFeaturization
     codecs::Vector{<:AbstractCodec}
 end
 
-GraphNodeFeaturization(features::Vector{<:AbstractAtomFeatureDescriptor}) = GraphNodeFeaturization(features, default_codec.(features))
+GraphNodeFeaturization(features::Vector{<:AbstractAtomFeatureDescriptor}) =
+    GraphNodeFeaturization(features, default_codec.(features))
 
 # NB: this constructor only works if every feature is an ElementFeature
 function GraphNodeFeaturization(
@@ -65,7 +66,13 @@ function GraphNodeFeaturization(
     end
 
     bins = map(zip(feature_names, nbins_here, logspaced_here, categorical_here)) do args
-        get_bins(args[1], lookup_table_here, nbins=args[2], logspaced=args[3], categorical=args[4])
+        get_bins(
+            args[1],
+            lookup_table_here,
+            nbins = args[2],
+            logspaced = args[3],
+            categorical = args[4],
+        )
     end
 
     codecs = OneHotOneCold.(categorical_here, bins)

@@ -63,8 +63,8 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
         T.(
             normalise(
                 l.σ.(
-                    lapl * X * l.convweight + 
-                    X * l.selfweight + 
+                    lapl * X * l.convweight +
+                    X * l.selfweight +
                     reduce(vcat, l.bias' for i = 1:size(X, 1)),
                 ),
                 dims = [1, 2],
@@ -74,7 +74,7 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
 end
 
 # alternate signature so FeaturizedAtoms can be fed into first layer
-(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where T =
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where {T} =
     l(a.atoms.laplacian, a.encoded_features)
 
 # signature to splat appropriately
@@ -193,8 +193,15 @@ struct AGNConvDEQ{T,F}
 end
 
 # NB can't do a pair of different numbers because otherwise get a size mismatch when trying to feed it back in...
-function AGNConvDEQ(input_size::Integer, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32, bias::Bool=true)
-    conv = AGNConv(input_size=>input_size, σ; initW=initW, initb=initb, T=T)
+function AGNConvDEQ(
+    input_size::Integer,
+    σ = softplus;
+    initW = glorot_uniform,
+    initb = zeros,
+    T::DataType = Float32,
+    bias::Bool = true,
+)
+    conv = AGNConv(input_size => input_size, σ; initW = initW, initb = initb, T = T)
     AGNConvDEQ(conv)
 end
 
@@ -210,8 +217,8 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     # do one convolution to get initial guess
     guess = l.conv(fa)[2]
 
-    f = function (dfeat,feat,p,t)
-        input = fa.atoms.laplacian, reshape(feat,size(guess))
+    f = function (dfeat, feat, p, t)
+        input = fa.atoms.laplacian, reshape(feat, size(guess))
         output = re(p)(input)
         dfeat .= vec(output[2]) .- vec(input[2])
     end
@@ -230,4 +237,3 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     )
     return fa.atoms.laplacian, out_mat
 end
-

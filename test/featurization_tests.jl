@@ -16,7 +16,7 @@ triangle_C = AtomGraph(Float32.([0 1 1; 1 0 1; 1 1 0]), ["C", "C", "C"])
     # make sure both constructors give the same results
     fzn1 = GraphNodeFeaturization(fs)
     fzn2 = GraphNodeFeaturization(fnames)
-    fzn3 = GraphNodeFeaturization(fnames, nbins=[6,4,10])
+    fzn3 = GraphNodeFeaturization(fnames, nbins = [6, 4, 10])
 
     @test output_shape(fzn1) == 24 # 10 (default length for X) + 4 (default for block) + 10 (default for atomic mass)
     @test output_shape(fzn2) == 24
@@ -55,13 +55,11 @@ end
     feature_4 = ElementFeatureDescriptor("noarsenic", test_df) # missing value case - `As` has a missing value
 
     @test encodable_elements(GraphNodeFeaturization([feature_1, feature_2])) ==
-            ["C", "As", "Tc"]
-    @test encodable_elements(GraphNodeFeaturization([feature_1, feature_4])) ==
-            ["C", "Tc"]
+          ["C", "As", "Tc"]
+    @test encodable_elements(GraphNodeFeaturization([feature_1, feature_4])) == ["C", "Tc"]
     @test encodable_elements(GraphNodeFeaturization([feature_2, feature_3])) ==
-            ["C", "As", "Tc"]
-    @test encodable_elements(GraphNodeFeaturization([feature_2, feature_4])) ==
-            ["C", "Tc"]
+          ["C", "As", "Tc"]
+    @test encodable_elements(GraphNodeFeaturization([feature_2, feature_4])) == ["C", "Tc"]
 end
 
 # chunk_vec helper fcn

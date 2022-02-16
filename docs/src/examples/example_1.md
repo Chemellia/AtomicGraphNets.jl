@@ -27,10 +27,7 @@ This downloads the data required to train the models into the directory `example
 
 ## 2. Train the Network
 
-Now that the dataset has been set up, run the `formation_energy.jl` file in your Julia environment and see what happens!
-
-Feel free to peruse and play with other options defined at the top of the file as well and see how it impacts the results!\
-In particular, the defaults have been set to only have a dataset of size 100 so that the base case will run quickly, but feel free to try more data to see how much better the results get.
+Now that the dataset has been set up, run the `formation_energy.jl` file in your Julia environment and play around with the training function!
 
 ## Note
 

@@ -1,7 +1,4 @@
-using Flux
 using Flux: glorot_uniform
-using ChemistryFeaturization
-using AtomicGraphNets
 
 """
 Build a model of the architecture introduced in the Xie and Grossman 2018 paper: https://arxiv.org/abs/1710.10324

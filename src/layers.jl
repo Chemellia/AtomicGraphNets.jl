@@ -1,12 +1,8 @@
-module Layers
-
-using Flux
-using Flux: glorot_uniform, normalise, @functor#, destructure
+using Flux: glorot_uniform, normalise, @functor, softplus#, destructure
 using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
-using ChemistryFeaturization
 using DifferentialEquations, DiffEqSensitivity
 
 """
@@ -42,8 +38,8 @@ function AGNConv(
     initb = zeros,
     T::DataType = Float64,
 )
-    selfweight = T.(initW(ch[2], ch[1]))
-    convweight = T.(initW(ch[2], ch[1]))
+    selfweight = T.(initW(ch[1], ch[2]))
+    convweight = T.(initW(ch[1], ch[2]))
     b = T.(initb(ch[2], 1))
     AGNConv(selfweight, convweight, b, σ)
 end
@@ -71,9 +67,9 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
         T.(
             normalise(
                 l.σ.(
-                    l.convweight * X * lapl +
-                    l.selfweight * X +
-                    reduce(hcat, l.bias for i = 1:size(X, 2)),
+                    lapl * X * l.convweight +
+                    X * l.selfweight +
+                    reduce(vcat, l.bias' for i = 1:size(X, 1)),
                 ),
                 dims = [1, 2],
             ),
@@ -82,7 +78,7 @@ function (l::AGNConv{T,F})(lapl::Matrix{<:Real}, X::Matrix{<:Real}) where {T<:Re
 end
 
 # alternate signature so FeaturizedAtoms can be fed into first layer
-(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where T =
+(l::AGNConv)(a::FeaturizedAtoms{AtomGraph{T},GraphNodeFeaturization}) where {T} =
     l(a.atoms.laplacian, a.encoded_features)
 
 # signature to splat appropriately
@@ -187,9 +183,8 @@ function (m::AGNPool)(feat::Matrix{<:Real})
     # compute what pad and stride need to be...
     x = reshape(feat, (size(feat)..., 1, 1))
     # do mean pooling across feature direction, average across all nodes in graph
-    # TODO: decide if this approach makes sense or if there's a smarter way
-    pdims = PoolDims(x, (m.dim, 1); padding = (m.pad, 0), stride = (m.str, 1))
-    mean(m.pool_func(x, pdims), dims = 2)[:, :, 1, 1]
+    pdims = PoolDims(x, (1, m.dim); padding = (0, m.pad), stride = (1, m.str))
+    Matrix(mean(m.pool_func(x, pdims), dims = 1)[:, :, 1, 1]')
 end
 
 # alternate signatures so it can take output directly from AGNConv layer
@@ -202,8 +197,15 @@ struct AGNConvDEQ{T,F}
 end
 
 # NB can't do a pair of different numbers because otherwise get a size mismatch when trying to feed it back in...
-function AGNConvDEQ(input_size::Integer, σ=softplus; initW=glorot_uniform, initb=zeros, T::DataType=Float32, bias::Bool=true)
-    conv = AGNConv(input_size=>input_size, σ; initW=initW, initb=initb, T=T)
+function AGNConvDEQ(
+    input_size::Integer,
+    σ = softplus;
+    initW = glorot_uniform,
+    initb = zeros,
+    T::DataType = Float32,
+    bias::Bool = true,
+)
+    conv = AGNConv(input_size => input_size, σ; initW = initW, initb = initb, T = T)
     AGNConvDEQ(conv)
 end
 
@@ -219,8 +221,8 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
     # do one convolution to get initial guess
     guess = l.conv(fa)[2]
 
-    f = function (dfeat,feat,p,t)
-        input = fa.atoms.laplacian, reshape(feat,size(guess))
+    f = function (dfeat, feat, p, t)
+        input = fa.atoms.laplacian, reshape(feat, size(guess))
         output = re(p)(input)
         dfeat .= vec(output[2]) .- vec(input[2])
     end
@@ -238,7 +240,4 @@ function (l::AGNConvDEQ)(fa::FeaturizedAtoms)
         size(guess),
     )
     return fa.atoms.laplacian, out_mat
-end
-
-
 end

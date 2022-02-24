@@ -27,7 +27,7 @@ input = featurize(ag, dummyfzn)
         @test length(model) == 5
         @test size(model[1].convweight) ==
               size(model[1].selfweight) ==
-              (conv_fea_len, in_fea_len)
+              (in_fea_len, conv_fea_len)
         @test size(model[2].convweight) ==
               size(model[2].selfweight) ==
               (conv_fea_len, conv_fea_len)
@@ -38,10 +38,10 @@ input = featurize(ag, dummyfzn)
     @testset "forward pass" begin
         lapl, output1 = model[1](input)
         int_mat =
-            model[2].convweight * output1 * lapl +
-            model[2].selfweight * output1 +
-            hcat([model[2].bias for i = 1:size(output1, 2)]...)
-        @test all(isapprox.(model[1:2](input)[2], zeros(Float64, 20, 2), atol = 2e-3))
+            lapl * output1 * model[2].convweight +
+            output1 * model[2].selfweight +
+            vcat([model[2].bias' for i = 1:size(output1, 1)]...)
+        @test all(isapprox.(model[1:2](input)[2], zeros(Float64, 2, 20), atol = 2e-3))
         @test model(input)[1] ≈ 0.693 atol = 1e-3
     end
 

@@ -10,25 +10,29 @@ if haskey(ENV, "DOCSARGS")
     end
 end
 
+pages = Any[
+    "Home"=>"index.md",
+    "Basic Graph Theory"=>"graph_theory.md",
+    "GCNNs"=>"gcnns.md",
+    "Comparison with cgcnn.py"=>"comparison.md",
+    "Examples"=>Any[
+        "Example 1"=>"examples/example_1.md",
+    ],
+    "Functions"=>Any[
+        "Layers"=>"functions/layers.md",
+        "Models"=>"functions/models.md"
+    ],
+    "Changelog"=>"changelog.md",
+]
+
 makedocs(
     sitename = "AtomicGraphNets.jl",
     modules = [AtomicGraphNets],
-    pages = Any[
-        "Home"=>"index.md",
-        "Basic Graph Theory"=>"graph_theory.md",
-        "GCNNs"=>"gcnns.md",
-        "Comparison with cgcnn.py"=>"comparison.md",
-        "Examples"=>Any[
-            "Example 1"=>"examples/example_1.md",
-            "Example 2"=>"examples/example_2.md",
-        ],
-        "Functions"=>Any["Layers"=>"functions/layers.md", "Models"=>"functions/models.md"],
-        "Changelog"=>"changelog.md",
-    ],
+    pages = pages,
     format = Documenter.HTML(
         # Use clean URLs, unless built as a "local" build
         prettyurls = !("local" in ARGS),
-        canonical = "https://aced-differentiate.github.io/AtomicGraphNets.jl/stable/",
+        canonical = "https://chemellia.github.io/AtomicGraphNets.jl/stable/",
         edit_link = "main",
     ),
     linkcheck = "linkcheck" in ARGS,
@@ -40,3 +44,19 @@ deploydocs(
     devbranch = "main",
     push_preview = true,
 )
+
+# for local build
+"""
+makedocs(
+    sitename = "AtomicGraphNets.jl",
+    modules = [AtomicGraphNets],
+    pages = pages,
+    format = Documenter.HTML(
+        # Use clean URLs, unless built as a "local" build
+        prettyurls = false,
+        canonical = "https://chemellia.github.io/AtomicGraphNets.jl/stable/",
+        edit_link = "main",
+    ),
+    linkcheck = "linkcheck" in ARGS,
+)
+"""

@@ -38,7 +38,7 @@ makedocs(
     linkcheck = "linkcheck" in ARGS,
 )
 deploydocs(
-    repo = "github.com/aced-differentiate/AtomicGraphNets.jl.git",
+    repo = "github.com/Chemellia/AtomicGraphNets.jl.git",
     target = "build",
     branch = "gh-pages",
     devbranch = "main",

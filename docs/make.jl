@@ -15,13 +15,8 @@ pages = Any[
     "Basic Graph Theory"=>"graph_theory.md",
     "GCNNs"=>"gcnns.md",
     "Comparison with cgcnn.py"=>"comparison.md",
-    "Examples"=>Any[
-        "Example 1"=>"examples/example_1.md",
-    ],
-    "Functions"=>Any[
-        "Layers"=>"functions/layers.md",
-        "Models"=>"functions/models.md"
-    ],
+    "Examples"=>Any["Example 1"=>"examples/example_1.md",],
+    "Functions"=>Any["Layers"=>"functions/layers.md", "Models"=>"functions/models.md"],
     "Changelog"=>"changelog.md",
 ]
 

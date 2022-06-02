@@ -97,7 +97,7 @@ function train_formation_energy(;
     end
     @epochs num_epochs Flux.train!(
         loss,
-        params(model),
+        Flux.params(model),
         train_data,
         opt,
         cb = Flux.throttle(evalcb, 5),

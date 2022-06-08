@@ -49,7 +49,7 @@ input = featurize(ag, dummyfzn)
         loss(x, y) = Flux.Losses.mse(model(x), y)
         data = zip([input], [1.0]) # high-quality data...
         opt = Descent(0.1) # should be deterministic
-        Flux.train!(loss, params(model), data, opt)
+        Flux.train!(loss, Flux.params(model), data, opt)
         @test model(input)[1] ≈ 1.051 atol = 1e-3
     end
 end
@@ -72,7 +72,7 @@ end
         loss(x, y) = Flux.Losses.mse(model(x), y)
         data = zip([(input, input)], [1.0]) # high-quality data...
         opt = Descent(0.1) # should be deterministic
-        Flux.train!(loss, params(model), data, opt)
+        Flux.train!(loss, Flux.params(model), data, opt)
         @test model((input, input))[1] ≈ -75.985 atol = 1e-3
     end
 end
@@ -105,7 +105,7 @@ end
         loss(x, y) = Flux.Losses.mse(model(x), y)
         data = zip([input], [1.0]) # high-quality data...
         opt = Descent(0.1) # should be deterministic
-        Flux.train!(loss, params(model), data, opt)
+        Flux.train!(loss, Flux.params(model), data, opt)
         @test model(input)[1] ≈ 1.051563 atol = 1e-6
     end
 end

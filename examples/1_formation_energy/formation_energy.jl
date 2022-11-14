@@ -38,7 +38,7 @@ function train_formation_energy(;
     num_conv = 3 # how many convolutional layers?
     crys_fea_len = 32 # length of crystal feature vector after pooling (keep node dimension constant for now)
     num_hidden_layers = 1 # how many fully-connected layers after convolution and pooling?
-    opt = ADAM(0.001) # optimizer
+    opt = Adam(0.001) # optimizer
 
     # dataset...first, read in outputs
     info = CSV.read(string(data_dir, prop, ".csv"), DataFrame)
@@ -81,7 +81,7 @@ function train_formation_energy(;
         num_conv = num_conv,
         atom_conv_feature_length = crys_fea_len,
         pooled_feature_length = (Int(crys_fea_len / 2)),
-        num_hidden_layers = 1,
+        num_hidden_layers = num_hidden_layers,
     )
 
     # define loss function and a callback to monitor progress
@@ -95,13 +95,15 @@ function train_formation_energy(;
     if verbose
         println("Training!")
     end
-    @epochs num_epochs Flux.train!(
-        loss,
-        Flux.params(model),
-        train_data,
-        opt,
-        cb = Flux.throttle(evalcb, 5),
-    )
+    for _ in 1:num_epochs 
+        Flux.train!(
+            loss,
+            Flux.params(model),
+            train_data,
+            opt,
+            cb = Flux.throttle(evalcb, 5),
+        )
+    end
 
     return model
 end

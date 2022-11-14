@@ -3,7 +3,7 @@ using Zygote: @adjoint, @nograd
 using LinearAlgebra, SparseArrays
 using Statistics
 using SimpleWeightedGraphs
-using DifferentialEquations, DiffEqSensitivity
+using DifferentialEquations, SciMLSensitivity
 
 """
     AGNConv(in=>out)

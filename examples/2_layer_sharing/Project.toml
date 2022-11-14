@@ -1,0 +1,7 @@
+[deps]
+AtomGraphs = "5a360db7-3336-4c46-b5a1-be4fe079ea55"
+AtomicGraphNets = "ccdf130a-3c88-4595-a023-a7e7f78b9dd5"
+ChemistryFeaturization = "6c925690-434a-421d-aea7-51398c5b007a"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+GeometricFlux = "7e08b658-56d3-11e9-2997-919d5b31e4ea"
+GraphSignals = "3ebe565e-a4b5-49c6-aed2-300248c3a9c1"
